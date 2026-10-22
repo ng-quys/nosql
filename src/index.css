@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Be Vietnam Pro', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Be Vietnam Pro', 'Outfit', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --color-leaf-50: #f2f8f5;
+  --color-leaf-100: #e2f1e9;
+  --color-leaf-200: #c5e3d3;
+  --color-leaf-300: #9bcbb4;
+  --color-leaf-400: #6cae8f;
+  --color-leaf-500: #40916c;
+  --color-leaf-600: #2d6a4f;
+  --color-leaf-700: #1b4332;
+  --color-leaf-800: #143427;
+  --color-leaf-900: #0c2219;
+
+  --color-citrus-50: #fff7ed;
+  --color-citrus-100: #ffedd5;
+  --color-citrus-200: #fed7aa;
+  --color-citrus-400: #fb923c;
+  --color-citrus-500: #f97316;
+  --color-citrus-600: #ea580c;
+
+  --color-cream-50: #fffdfa;
+  --color-cream-100: #fcfbf7;
+  --color-cream-200: #f7f4ec;
+  --color-cream-300: #ede8dc;
+  --color-cream-400: #ded6c3;
+
+  --color-ink-900: #121c17;
+  --color-ink-800: #1e2e27;
+  --color-ink-700: #2d3f37;
+  --color-ink-500: #5d7067;
+  --color-ink-400: #889c92;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #fcfbf7;
+  color: #121c17;
+  font-weight: 400;
+  line-height: 1.55;
+  min-height: 100dvh;
+}
+
+h1 {
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+}
+
+h2 {
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+nav a {
+  font-weight: 500;
+}
+
+button {
+  font-weight: 600;
+}
+
+/* Custom scrollbar for POS and KDS ticket lists */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(45, 106, 79, 0.2);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(45, 106, 79, 0.4);
+}
