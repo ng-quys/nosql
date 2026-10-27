@@ -78,7 +78,12 @@ router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
     res.status(404).json({ success: false, message: 'Không tìm thấy tài khoản' });
     return;
   }
-  const nextRole = req.body.role ? String(req.body.role).toUpperCase() : String(target.role).toUpperCase();
+  const currentRole = String(target.role).toUpperCase();
+  if (req.body.role !== undefined && String(req.body.role).toUpperCase() !== currentRole) {
+    res.status(400).json({ success: false, message: 'Vai trò của tài khoản là cố định và không thể thay đổi' });
+    return;
+  }
+  const nextRole = currentRole;
   const nextActive = req.body.isActive === undefined ? target.isActive !== false : Boolean(req.body.isActive);
   if (!ROLES.includes(nextRole)) {
     res.status(400).json({ success: false, message: 'Vai trò không hợp lệ' });

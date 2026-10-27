@@ -47,6 +47,7 @@ app.get('/', (_req, res) => {
       '/api/reports/revenue',
       '/api/reports/top-products',
       '/api/auth/me',
+      '/api/chat',
       '/api/health',
     ],
   });

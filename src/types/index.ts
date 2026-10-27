@@ -89,6 +89,7 @@ export interface Order {
   cashGiven?: number;
   changeDue?: number;
   promotionCode?: string;
+  checkoutRequestId?: string;
 }
 
 export interface Ingredient {

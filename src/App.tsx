@@ -6,6 +6,7 @@ import { Footer } from './components/common/Footer';
 import { DrinkCustomizerModal } from './components/common/DrinkCustomizerModal';
 import { CartDrawer } from './components/common/CartDrawer';
 import { ReceiptModal } from './components/common/ReceiptModal';
+import { ChatWidget } from './components/common/ChatWidget';
 
 // Pages
 import { HomePage } from './pages/customer/HomePage';
@@ -99,6 +100,7 @@ function AppShell() {
       <DrinkCustomizerModal />
       {role === 'customer' && <CartDrawer />}
       <ReceiptModal />
+      {role === 'customer' && <ChatWidget />}
     </div>
   );
 }

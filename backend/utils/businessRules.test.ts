@@ -20,6 +20,16 @@ test('khuyến mãi phần trăm tuân thủ đơn tối thiểu và trần gi�
   assert.equal(calculatePromotionDiscount(promotion, 100000), 15000);
 });
 
+test('chuẩn hóa khuyến mãi demo cũ fixed 15 thành giảm 15 phần trăm', () => {
+  const promotion = { type: 'fixed', discount: 15, minOrderAmount: 0, isActive: true };
+  assert.equal(calculatePromotionDiscount(promotion, 41000), 6150);
+});
+
+test('giữ nguyên khuyến mãi giảm số tiền cố định hợp lệ', () => {
+  const promotion = { type: 'fixed', discount: 20000, minOrderAmount: 0, isActive: true };
+  assert.equal(calculatePromotionDiscount(promotion, 41000), 20000);
+});
+
 test('CSV kiểm tra cột bắt buộc và đọc được dấu phẩy trong chuỗi', () => {
   const rows = parseProductCsv('name,categoryId,price,description\n"Xoài, dừa",smoothie,45000,"Tươi, mát"');
   assert.equal(rows[0].data.name, 'Xoài, dừa');

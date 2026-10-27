@@ -5,7 +5,7 @@ import { Customer } from '../models/Customer';
 import { isDbConnected } from '../config/db';
 import { Promotion } from '../models/Promotion';
 import { AuthRequest, authenticate, authorize, optionalAuthenticate } from '../middleware/auth';
-import { calculateItemPrice, calculatePromotionDiscount } from '../utils/orderPricing';
+import { calculateItemPrice, calculatePromotionDiscount, getPromotionTerms } from '../utils/orderPricing';
 
 const router = Router();
 
@@ -48,6 +48,8 @@ function formatOrder(doc: any) {
     paymentMethod: o.paymentMethod || 'cash',
     paymentStatus: o.paymentStatus || 'paid',
     notes: o.notes || '',
+    promotionCode: o.promotionCode,
+    promotionSnapshot: o.promotionSnapshot,
     createdAt: o.createdAt,
   };
 }
@@ -177,6 +179,7 @@ router.post('/', optionalAuthenticate, async (req: AuthRequest, res: Response): 
       paymentMethod = 'cash',
       paymentStatus = 'paid',
       notes,
+      checkoutRequestId,
     } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -190,6 +193,11 @@ router.post('/', optionalAuthenticate, async (req: AuthRequest, res: Response): 
     if (!isDbConnected()) {
       res.status(503).json({ success: false, message: 'Không thể kết nối MongoDB' });
       return;
+    }
+
+    if (checkoutRequestId) {
+      const existingOrder = await Order.findOne({ checkoutRequestId: String(checkoutRequestId) });
+      if (existingOrder) { res.status(200).json({ success: true, data: formatOrder(existingOrder) }); return; }
     }
 
     // 1. Validate customer if customerId exists
@@ -243,6 +251,7 @@ router.post('/', optionalAuthenticate, async (req: AuthRequest, res: Response): 
       validatedItems.push({
         productId: (product._id || product.id).toString(),
         name: product.name,
+        categoryId: product.categoryId,
         qty,
         quantity: qty,
         unitPrice: realUnitPrice,
@@ -259,6 +268,9 @@ router.post('/', optionalAuthenticate, async (req: AuthRequest, res: Response): 
     // 4, 5, 6. Backend Subtotal, Discount & Total Calculation
     let cleanDiscount = 0;
     let appliedPromotionCode: string | undefined;
+    let appliedPromotion: any;
+    let promotionCustomerKey: string | undefined;
+    let promotionUsagePath: string | undefined;
     if (promotionCode) {
       const code = String(promotionCode).trim().toUpperCase();
       const promotion = await Promotion.findOne({ code });
@@ -266,12 +278,25 @@ router.post('/', optionalAuthenticate, async (req: AuthRequest, res: Response): 
         res.status(400).json({ success: false, message: 'Mã khuyến mãi không tồn tại hoặc đã ngừng áp dụng' });
         return;
       }
-      cleanDiscount = calculatePromotionDiscount(promotion, calculatedSubtotal);
+      const now = new Date();
+      if (promotion.startAt && new Date(promotion.startAt) > now) { res.status(400).json({ success: false, message: 'Mã giảm giá chưa có hiệu lực' }); return; }
+      if (promotion.endAt && new Date(promotion.endAt) < now) { res.status(400).json({ success: false, message: 'Mã giảm giá đã hết hạn' }); return; }
+      const eligibleSubtotal = validatedItems.filter((item) => {
+        if (!promotion.scope || promotion.scope === 'all') return true;
+        if (promotion.scope === 'category') return (promotion.categoryIds || []).includes(item.categoryId);
+        return (promotion.productIds || []).includes(item.productId);
+      }).reduce((sum, item) => sum + item.amount, 0);
+      if (eligibleSubtotal <= 0) { res.status(400).json({ success: false, message: 'Giỏ hàng không có sản phẩm thuộc phạm vi áp dụng của mã' }); return; }
+      cleanDiscount = calculatePromotionDiscount(promotion, eligibleSubtotal);
       if (cleanDiscount <= 0) {
         res.status(400).json({ success: false, message: `Đơn hàng chưa đạt tối thiểu ${Number(promotion.minOrderAmount || 0).toLocaleString('vi-VN')} ₫` });
         return;
       }
       appliedPromotionCode = code;
+      appliedPromotion = promotion;
+      const rawCustomerKey = String(effectiveCustomerId || verifiedCustomerPhone || req.ip || 'guest');
+      promotionCustomerKey = Buffer.from(rawCustomerKey).toString('base64url');
+      promotionUsagePath = `usageByCustomer.${promotionCustomerKey}`;
     }
     const calculatedTotal = Math.max(0, calculatedSubtotal - cleanDiscount);
 
@@ -293,6 +318,18 @@ router.post('/', optionalAuthenticate, async (req: AuthRequest, res: Response): 
       orderId = `ORD${Date.now().toString().slice(-8)}`;
     }
 
+    if (appliedPromotion) {
+      const usageQuery: any = { _id: appliedPromotion._id, isActive: { $ne: false }, status: { $ne: 'inactive' } };
+      if (Number(appliedPromotion.usageLimit || 0) > 0) usageQuery.$expr = { $lt: [{ $ifNull: ['$usedCount', 0] }, Number(appliedPromotion.usageLimit)] };
+      if (Number(appliedPromotion.perCustomerLimit || 0) > 0 && promotionUsagePath) {
+        usageQuery.$or = [{ [promotionUsagePath]: { $exists: false } }, { [promotionUsagePath]: { $lt: Number(appliedPromotion.perCustomerLimit) } }];
+      }
+      const increments: Record<string, number> = { usedCount: 1 };
+      if (promotionUsagePath) increments[promotionUsagePath] = 1;
+      const reserved = await Promotion.findOneAndUpdate(usageQuery, { $inc: increments }, { new: true });
+      if (!reserved) { res.status(409).json({ success: false, message: 'Mã giảm giá đã hết lượt hoặc khách hàng đã đạt giới hạn sử dụng' }); return; }
+    }
+
     const newOrder = new Order({
       _id: orderId,
       orderNumber: orderId,
@@ -310,11 +347,30 @@ router.post('/', optionalAuthenticate, async (req: AuthRequest, res: Response): 
       payment,
       paymentMethod,
       paymentStatus,
+      promotionCode: appliedPromotionCode,
+      promotionSnapshot: appliedPromotion ? {
+        code: appliedPromotionCode,
+        discountType: getPromotionTerms(appliedPromotion).type,
+        discountValue: getPromotionTerms(appliedPromotion).value,
+        maxDiscount: Number(appliedPromotion.maxDiscount || 0),
+        minOrderAmount: Number(appliedPromotion.minOrderAmount || 0),
+        scope: appliedPromotion.scope || 'all',
+      } : undefined,
+      promotionCustomerKey,
+      promotionUsageCounted: Boolean(appliedPromotion),
+      checkoutRequestId: checkoutRequestId ? String(checkoutRequestId) : undefined,
       notes: [notes, appliedPromotionCode ? `Mã khuyến mãi: ${appliedPromotionCode}` : ''].filter(Boolean).join(' | '),
       createdAt: new Date().toISOString(),
     });
 
-    await newOrder.save();
+    try {
+      await newOrder.save();
+    } catch (error) {
+      if (appliedPromotion && promotionUsagePath) {
+        await Promotion.updateOne({ _id: appliedPromotion._id }, { $inc: { usedCount: -1, [promotionUsagePath]: -1 } });
+      }
+      throw error;
+    }
 
     // Update customer points / order count if customer registered
     if (verifiedCustomerPhone) {
@@ -360,7 +416,7 @@ router.put('/:id/status', authenticate, authorize('MANAGER', 'STAFF', 'BARISTA')
       return;
     }
 
-    const updated = await Order.findOneAndUpdate(
+    let updated: any = await Order.findOneAndUpdate(
       { $or: [{ _id: id }, { id }, { orderNumber: id }] },
       { status },
       { new: true }
@@ -369,6 +425,20 @@ router.put('/:id/status', authenticate, authorize('MANAGER', 'STAFF', 'BARISTA')
     if (!updated) {
       res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng để cập nhật trạng thái' });
       return;
+    }
+
+    if (status === 'cancelled' && updated.promotionCode && updated.promotionUsageCounted && !updated.promotionUsageRefunded) {
+      const claimed: any = await Order.findOneAndUpdate(
+        { _id: updated._id, promotionUsageRefunded: { $ne: true } },
+        { $set: { promotionUsageRefunded: true } },
+        { new: true }
+      );
+      if (claimed) {
+        const inc: Record<string, number> = { usedCount: -1 };
+        if (claimed.promotionCustomerKey) inc[`usageByCustomer.${claimed.promotionCustomerKey}`] = -1;
+        await Promotion.updateOne({ code: claimed.promotionCode, usedCount: { $gt: 0 } }, { $inc: inc });
+        updated = claimed;
+      }
     }
 
     res.json({

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   X,
@@ -51,13 +51,15 @@ export const CartDrawer: React.FC = () => {
   const [isCheckingCoupon, setIsCheckingCoupon] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  if (!isCartDrawerOpen) return null;
+  const [checkoutError, setCheckoutError] = useState('');
+  const checkoutRequestId = useRef(crypto.randomUUID());
 
   useEffect(() => {
     setAppliedDiscount(0);
     setAppliedCode('');
   }, [cartSubtotal]);
+
+  if (!isCartDrawerOpen) return null;
 
   const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,7 +68,10 @@ export const CartDrawer: React.FC = () => {
     if (!code) return;
     setIsCheckingCoupon(true);
     try {
-      const result = await PromotionService.validate(code, cartSubtotal);
+      const result = await PromotionService.validate(code, cartSubtotal, {
+        customerKey: currentUser?.id || customerPhone,
+        items: cart.map((item) => ({ productId: item.drinkId, categoryId: item.drink.categoryId, amount: item.unitPrice * item.quantity })),
+      });
       setAppliedDiscount(result.discount);
       setAppliedCode(result.promotion.code);
     } catch (error: any) {
@@ -82,6 +87,7 @@ export const CartDrawer: React.FC = () => {
 
   const handleCheckout = async () => {
     if (cart.length === 0) return;
+    setCheckoutError('');
     setIsSubmitting(true);
 
     try {
@@ -101,6 +107,7 @@ export const CartDrawer: React.FC = () => {
         paymentStatus: 'paid',
         estimatedMinutes: 3 + cart.length * 2,
         notes: orderNotes.trim() || undefined,
+        checkoutRequestId: checkoutRequestId.current,
       });
 
       try {
@@ -115,9 +122,16 @@ export const CartDrawer: React.FC = () => {
       }
 
       clearCart();
+      checkoutRequestId.current = crypto.randomUUID();
       setIsCartDrawerOpen(false);
       setActiveReceiptOrder(order);
       navigate('/track');
+    } catch (error: unknown) {
+      setCheckoutError(
+        error instanceof Error
+          ? error.message
+          : 'Không thể tạo đơn hàng. Vui lòng kiểm tra kết nối và thử lại.'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -372,9 +386,10 @@ export const CartDrawer: React.FC = () => {
                   </button>
                 </form>
                 {appliedDiscount > 0 && (
-                  <p className="text-[11px] text-[#2D6A4F] mt-1 font-semibold flex items-center gap-1">
-                    <CheckCircle className="w-3 h-3" /> Đã áp dụng giảm -{formatVND(appliedDiscount)}
-                  </p>
+                  <div className="mt-1 flex items-center justify-between gap-2 text-[11px] font-semibold text-[#2D6A4F]">
+                    <p className="flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Đã áp dụng {appliedCode}: -{formatVND(appliedDiscount)}</p>
+                    <button type="button" onClick={() => { setAppliedDiscount(0); setAppliedCode(''); setCouponCode(''); }} className="underline underline-offset-2">Bỏ mã</button>
+                  </div>
                 )}
                 {couponError && (
                   <p className="text-[11px] text-[#DC2626] mt-1">{couponError}</p>
@@ -387,6 +402,11 @@ export const CartDrawer: React.FC = () => {
         {/* Tổng tiền & Nút xác nhận đơn */}
         {cart.length > 0 && (
           <div className="p-4 border-t border-[#E5DFCE] bg-[#FCFBF7] space-y-3">
+            {checkoutError && (
+              <p className="rounded-lg bg-[#FFF1F2] px-3 py-2 text-xs text-[#9F1239]" role="alert">
+                {checkoutError}
+              </p>
+            )}
             <div className="space-y-1 text-xs text-[#5D7067]">
               <div className="flex justify-between">
                 <span>Tạm tính</span>

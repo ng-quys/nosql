@@ -11,6 +11,7 @@ import reviewRoutes from './reviewRoutes';
 import promotionRoutes from './promotionRoutes';
 import reportRoutes from './reportRoutes';
 import userRoutes from './userRoutes';
+import chatRoutes from './chatRoutes';
 import { isDbConnected, DB_NAME } from '../config/db';
 
 const apiRouter = Router();
@@ -28,6 +29,7 @@ apiRouter.use('/reviews', reviewRoutes);
 apiRouter.use('/promotions', promotionRoutes);
 apiRouter.use('/reports', reportRoutes);
 apiRouter.use('/users', userRoutes);
+apiRouter.use('/chat', chatRoutes);
 
 // GET /api/health (Section 5)
 apiRouter.get('/health', async (_req: Request, res: Response): Promise<void> => {

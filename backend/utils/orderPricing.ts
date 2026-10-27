@@ -6,6 +6,23 @@ export const BOOSTER_PRICES: Record<string, { name: string; price: number }> = {
   b_suachua: { name: 'Thêm sữa chua lên men', price: 7000 },
 };
 
+export type PromotionDiscountType = 'fixed' | 'percentage';
+
+export function getPromotionTerms(promotion: any): { value: number; type: PromotionDiscountType } {
+  const value = Number(promotion?.discount ?? promotion?.discountValue ?? 0);
+  const storedType = String(promotion?.type || promotion?.discountType || 'fixed').toLowerCase();
+
+  // Dữ liệu demo cũ lưu các mã JUICE15/WELCOME10 dưới dạng fixed 15/10.
+  // Một khoản giảm cố định dưới 1.000đ không có ý nghĩa với bảng giá VND,
+  // nên chuẩn hóa các giá trị 1..100 thành phần trăm.
+  const type: PromotionDiscountType =
+    storedType === 'percentage' || (storedType === 'fixed' && value > 0 && value <= 100)
+      ? 'percentage'
+      : 'fixed';
+
+  return { value, type };
+}
+
 export function calculateItemPrice(basePrice: number, size: unknown, boosters: unknown) {
   const normalizedSize = String(size || 'medium').toLowerCase();
   if (!(normalizedSize in SIZE_SURCHARGES)) throw new Error('Kích cỡ món uống không hợp lệ');
@@ -25,8 +42,7 @@ export function calculateItemPrice(basePrice: number, size: unknown, boosters: u
 export function calculatePromotionDiscount(promotion: any, subtotal: number): number {
   if (!promotion || promotion.isActive === false || promotion.status === 'inactive') return 0;
   if (subtotal < Number(promotion.minOrderAmount || 0)) return 0;
-  const value = Number(promotion.discount ?? promotion.discountValue ?? 0);
-  const type = promotion.type || promotion.discountType || 'fixed';
+  const { value, type } = getPromotionTerms(promotion);
   const raw = type === 'percentage' ? Math.round(subtotal * value / 100) : Math.round(value);
   return Math.max(0, Math.min(subtotal, promotion.maxDiscount ? Math.min(raw, Number(promotion.maxDiscount)) : raw));
 }

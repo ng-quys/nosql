@@ -164,8 +164,10 @@ export const DrinkCustomizerModal: React.FC = () => {
                         <span className="text-xs font-bold text-[#1B4332]">{info.label}</span>
                         {isSelected && <Check className="w-3.5 h-3.5 text-[#2D6A4F]" />}
                       </div>
-                      <p className="text-[11px] text-[#5D7067] mt-0.5">{info.volume}</p>
-                      <p className="text-xs font-semibold text-[#EA580C] mt-1 tabular-nums">
+                      <p className="mt-0.5 whitespace-nowrap text-[11px] text-[#5D7067]">
+                        {info.volume}
+                      </p>
+                      <p className="mt-1 whitespace-nowrap text-xs font-semibold tabular-nums text-[#EA580C]">
                         {info.extra > 0 ? `+${formatVND(info.extra)}` : 'Tiêu chuẩn'}
                       </p>
                     </button>
@@ -321,10 +323,10 @@ export const DrinkCustomizerModal: React.FC = () => {
               <button
                 type="button"
                 onClick={handleAddToCart}
-                className="flex-1 flex items-center justify-between px-5 py-3 rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] active:scale-98 text-white font-semibold text-xs transition-all shadow-sm"
+                className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-xl bg-[#2D6A4F] px-4 py-3 text-xs font-semibold text-white shadow-sm transition-all hover:bg-[#1B4332] active:scale-98"
               >
-                <span>Thêm vào đơn hàng</span>
-                <span className="text-sm font-bold tabular-nums">
+                <span className="whitespace-nowrap">Thêm vào đơn hàng</span>
+                <span className="whitespace-nowrap text-sm font-bold tabular-nums">
                   {formatVND(totalPrice)}
                 </span>
               </button>

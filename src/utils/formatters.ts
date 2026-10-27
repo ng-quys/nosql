@@ -50,11 +50,6 @@ export const formatVND = (amount: number | string | undefined | null): string =>
     return '0 ₫';
   }
 
-  // Chuẩn hóa nếu là số nhỏ bất thường (do cache cũ 7, 8, 9 hoặc viết tắt)
-  if (num > 0 && num < 1000) {
-    num = sanitizePrice(num);
-  }
-
   const rounded = Math.round(num);
   const formatted = rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   return `${formatted} ₫`;

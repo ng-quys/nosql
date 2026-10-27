@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IOrderItem {
   productId: string;
+  categoryId?: string;
   qty: number;
   unitPrice: number;
   amount: number;
@@ -36,11 +37,18 @@ export interface IOrder extends Document {
   notes?: string;
   createdAt?: Date | string;
   updatedAt?: Date | string;
+  promotionCode?: string;
+  promotionSnapshot?: any;
+  promotionCustomerKey?: string;
+  promotionUsageCounted?: boolean;
+  promotionUsageRefunded?: boolean;
+  checkoutRequestId?: string;
 }
 
 const OrderItemSchema = new Schema(
   {
     productId: { type: String, required: true },
+    categoryId: { type: String },
     qty: { type: Number, required: true, default: 1 },
     unitPrice: { type: Number, required: true },
     amount: { type: Number, required: true },
@@ -52,6 +60,12 @@ const OrderItemSchema = new Schema(
     boosters: { type: [Schema.Types.Mixed], default: [] },
     note: { type: String, default: '' },
     notes: { type: String, default: '' },
+    promotionCode: { type: String },
+    promotionSnapshot: { type: Schema.Types.Mixed },
+    promotionCustomerKey: { type: String },
+    promotionUsageCounted: { type: Boolean, default: false },
+    promotionUsageRefunded: { type: Boolean, default: false },
+    checkoutRequestId: { type: String },
     drink: { type: Schema.Types.Mixed },
   },
   { _id: false, strict: false }
@@ -93,6 +107,7 @@ const OrderSchema = new Schema<IOrder>(
 
 OrderSchema.index({ customerId: 1, createdAt: -1 });
 OrderSchema.index({ status: 1, createdAt: -1 });
+OrderSchema.index({ checkoutRequestId: 1 }, { unique: true, sparse: true });
 
 OrderSchema.virtual('id').get(function () {
   return (this._id || (this as any).id)?.toString();
