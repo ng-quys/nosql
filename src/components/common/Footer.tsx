@@ -7,12 +7,12 @@ export const Footer: React.FC = () => {
   const { role } = useStore();
 
   return (
-    <footer className="bg-[#121C17] text-[#D8E2DC] mt-auto border-t border-[#1E2E27]">
+    <footer className={`${role === 'customer' ? 'fresh-footer' : ''} bg-[#121C17] text-[#D8E2DC] mt-auto border-t border-[#1E2E27]`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 lg:gap-10">
           {/* Brand Col */}
           <div className="space-y-3 md:col-span-1">
-            <div className="flex items-center gap-2 text-white font-bold text-lg font-['Be_Vietnam_Pro']">
+            <div className="flex items-center gap-2 text-white font-bold text-lg font-sans">
               <span className="w-6 h-6 rounded-md bg-[#2D6A4F] flex items-center justify-center text-[#F2F8F5]">
                 <Leaf className="w-3.5 h-3.5" />
               </span>

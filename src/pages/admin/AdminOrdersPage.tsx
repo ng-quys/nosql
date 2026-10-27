@@ -4,6 +4,7 @@ import { useStore } from '../../context/StoreContext';
 import { Order, OrderStatus, OrderType } from '../../types';
 import { formatVND, formatDate, formatTime } from '../../utils/formatters';
 import { OrderService } from '../../services/orderService';
+import { Pagination } from '../../components/common/Pagination';
 
 export const AdminOrdersPage: React.FC = () => {
   const { orders: storeOrders, updateOrderStatus: storeUpdateStatus, setActiveReceiptOrder } = useStore();
@@ -15,6 +16,8 @@ export const AdminOrdersPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<OrderType | 'all'>('all');
+  const [page, setPage] = useState(1);
+  const pageSize = 12;
 
   const fetchOrders = async () => {
     try {
@@ -65,6 +68,8 @@ export const AdminOrdersPage: React.FC = () => {
     }
     return true;
   });
+  useEffect(() => setPage(1), [search, statusFilter, typeFilter]);
+  const pagedOrders = filteredOrders.slice((page - 1) * pageSize, page * pageSize);
 
   const getOrderTypeLabel = (t: string) => {
     if (t === 'dine_in') return 'Tại quán';
@@ -150,7 +155,7 @@ export const AdminOrdersPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F2EDE2]">
-              {filteredOrders.map((ord) => (
+              {pagedOrders.map((ord) => (
                 <tr key={ord.id} className="hover:bg-[#FCFBF7] transition-colors">
                   <td className="py-3.5 px-4 font-mono">
                     <p className="font-bold text-[#1B4332]">{ord.orderNumber}</p>
@@ -184,7 +189,7 @@ export const AdminOrdersPage: React.FC = () => {
                   </td>
 
                   <td className="py-3.5 px-4">
-                    <p className="font-bold text-sm font-['Outfit'] text-[#1B4332] tabular-nums">
+                    <p className="font-bold text-sm font-sans text-[#1B4332] tabular-nums">
                       {formatVND(ord.totalAmount)}
                     </p>
                     <span className="text-[10px] font-semibold text-[#40916C]">
@@ -227,6 +232,7 @@ export const AdminOrdersPage: React.FC = () => {
             </tbody>
           </table>
         </div>
+        <div className="px-4 pb-4"><Pagination page={page} pageSize={pageSize} totalItems={filteredOrders.length} onPageChange={setPage} /></div>
       </div>
     </div>
   );

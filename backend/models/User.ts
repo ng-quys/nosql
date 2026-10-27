@@ -13,6 +13,8 @@ export interface IUser extends Document {
   points?: number;
   loyaltyPoints?: number;
   tier?: string;
+  isActive?: boolean;
+  tokenVersion?: number;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
@@ -29,6 +31,8 @@ const UserSchema = new Schema<IUser>(
     points: { type: Number, default: 0 },
     loyaltyPoints: { type: Number, default: 0 },
     tier: { type: String, default: 'Thành viên Mới' },
+    isActive: { type: Boolean, default: true, index: true },
+    tokenVersion: { type: Number, default: 0 },
   },
   {
     collection: 'users',

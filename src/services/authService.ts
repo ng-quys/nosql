@@ -33,15 +33,7 @@ export class AuthService {
   static async getCurrentUser(): Promise<User | null> {
     const token = localStorage.getItem(JWT_TOKEN_KEY);
     if (!token) {
-      // Check cached user for session continuity
-      const cached = localStorage.getItem(CURRENT_USER_KEY);
-      if (cached) {
-        try {
-          return JSON.parse(cached);
-        } catch {
-          // ignore
-        }
-      }
+      localStorage.removeItem(CURRENT_USER_KEY);
       return null;
     }
 
@@ -93,7 +85,6 @@ export class AuthService {
       name,
       email: isEmail ? identifier : undefined,
       username: !isEmail ? identifier : identifier.split('@')[0],
-      role: role.toUpperCase(),
       phone,
       password,
     };
@@ -116,26 +107,7 @@ export class AuthService {
    * Role switcher for dev/demo testing
    */
   static async switchRole(role: UserRole): Promise<User> {
-    const targetUser: User = {
-      id: `usr_${role}_demo`,
-      name: role === 'customer' ? 'Khách hàng' : role === 'staff' ? 'Thu ngân' : role === 'barista' ? 'Pha chế' : 'Quản lý cửa hàng',
-      email: `${role}@freshleaf.vn`,
-      role,
-      loyaltyPoints: role === 'customer' ? 350 : 0,
-      tier: 'VIP Vàng',
-    };
-
-    try {
-      const response = await ApiService.post<any>('/auth/token', { role: role.toUpperCase() });
-      if (response && response.data && response.data.token) {
-        localStorage.setItem(JWT_TOKEN_KEY, response.data.token);
-      }
-    } catch {
-      // fallback local session
-    }
-
-    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(targetUser));
-    return targetUser;
+    throw new Error(`Không thể tự chuyển sang vai trò ${role}. Hãy đăng nhập bằng tài khoản được quản lý cấp quyền.`);
   }
 
   /**

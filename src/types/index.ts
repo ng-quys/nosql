@@ -88,6 +88,7 @@ export interface Order {
   notes?: string;
   cashGiven?: number;
   changeDue?: number;
+  promotionCode?: string;
 }
 
 export interface Ingredient {

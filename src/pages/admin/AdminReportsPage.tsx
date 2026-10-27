@@ -73,7 +73,7 @@ export const AdminReportsPage: React.FC = () => {
             <BarChart3 className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-['Outfit'] font-bold text-base text-[#1B4332]">
+            <h3 className="font-sans font-bold text-base text-[#1B4332]">
               Báo cáo doanh thu &amp; Hiệu suất bán hàng
             </h3>
             <p className="text-xs text-[#5D7067]">Chi nhánh: 268 Nguyễn Trãi, Q.1 &bull; Tổng doanh thu: {formatVND(totalGross)}</p>
@@ -114,7 +114,7 @@ export const AdminReportsPage: React.FC = () => {
         {/* Tỷ trọng doanh thu theo danh mục */}
         <div className="p-6 rounded-3xl bg-white border border-[#E5DFCE] space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-[#F2EDE2]">
-            <h4 className="font-['Outfit'] font-bold text-sm text-[#1B4332]">
+            <h4 className="font-sans font-bold text-sm text-[#1B4332]">
               Tỷ trọng doanh thu danh mục
             </h4>
             <PieChart className="w-4 h-4 text-[#40916C]" />
@@ -168,7 +168,7 @@ export const AdminReportsPage: React.FC = () => {
         {/* Tốc độ phục vụ Barista */}
         <div className="p-6 rounded-3xl bg-white border border-[#E5DFCE] space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-[#F2EDE2]">
-            <h4 className="font-['Outfit'] font-bold text-sm text-[#1B4332]">
+            <h4 className="font-sans font-bold text-sm text-[#1B4332]">
               Tốc độ phục vụ tại quầy
             </h4>
             <TrendingUp className="w-4 h-4 text-[#2D6A4F]" />
@@ -197,7 +197,7 @@ export const AdminReportsPage: React.FC = () => {
         {/* Nguyên liệu & Tái chế bã trái cây */}
         <div className="p-6 rounded-3xl bg-white border border-[#E5DFCE] space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-[#F2EDE2]">
-            <h4 className="font-['Outfit'] font-bold text-sm text-[#1B4332]">
+            <h4 className="font-sans font-bold text-sm text-[#1B4332]">
               Bảo vệ môi trường
             </h4>
             <Leaf className="w-4 h-4 text-[#40916C]" />

@@ -165,15 +165,15 @@ export const PosPage: React.FC = () => {
         </div>
 
         {/* Lưới sản phẩm POS */}
-        <div className="flex-1 overflow-y-auto p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 content-start">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 auto-rows-max gap-3 sm:gap-4 content-start">
           {filteredProducts.map((drink) => (
             <div
               key={drink.id}
-              className="bg-white rounded-xl border border-[#E5DFCE] hover:border-[#2D6A4F] hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group select-none"
+              className="min-h-[218px] bg-white rounded-xl border border-[#E5DFCE] hover:border-[#2D6A4F] hover:shadow-md transition-all flex flex-col overflow-hidden group select-none"
             >
               <div
                 onClick={() => openDrinkModal(drink)}
-                className={`cursor-pointer p-3 bg-gradient-to-b ${drink.bgGradient} flex items-center justify-center relative min-h-[120px]`}
+                className={`h-32 shrink-0 cursor-pointer p-2 bg-gradient-to-b ${drink.bgGradient} flex items-center justify-center relative overflow-hidden`}
               >
                 <BeverageIllustration drink={drink} size="sm" />
                 <span className="absolute top-2 right-2 text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/90 text-[#1B4332]">
@@ -181,14 +181,14 @@ export const PosPage: React.FC = () => {
                 </span>
               </div>
 
-              <div className="p-3 space-y-1.5 flex-1 flex flex-col justify-between">
+              <div className="min-h-[90px] p-3 space-y-1.5 flex-1 flex flex-col justify-between bg-white">
                 <div>
                   <h4 className="text-xs font-bold text-[#1B4332] line-clamp-1">{drink.name}</h4>
                   <p className="text-[10px] text-[#5D7067] truncate">{drink.ingredients.slice(0, 2).join(', ')}</p>
                 </div>
 
                 <div className="pt-2 border-t border-[#F2EDE2] flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#EA580C] font-['Outfit'] tabular-nums">
+                  <span className="text-xs font-bold text-[#EA580C] font-sans tabular-nums">
                     {formatVND(drink.basePrice)}
                   </span>
                   <div className="flex items-center gap-1">
@@ -219,7 +219,7 @@ export const PosPage: React.FC = () => {
         <div className="p-3.5 border-b border-[#E5DFCE] bg-[#FCFBF7] space-y-2.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="font-['Outfit'] font-bold text-sm text-[#1B4332]">Đơn hàng hiện tại</span>
+              <span className="font-sans font-bold text-sm text-[#1B4332]">Đơn hàng hiện tại</span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#E2F1E9] text-[#1B4332] font-semibold">
                 QUẦY THU NGÂN
               </span>
@@ -374,7 +374,7 @@ export const PosPage: React.FC = () => {
               </div>
               <div className="pt-1.5 border-t border-[#E5DFCE] flex justify-between font-bold text-sm text-[#1B4332]">
                 <span>Tổng cộng</span>
-                <span className="font-['Outfit'] text-base tabular-nums text-[#EA580C]">
+                <span className="font-sans text-base tabular-nums text-[#EA580C]">
                   {formatVND(payableTotal)}
                 </span>
               </div>
@@ -385,7 +385,7 @@ export const PosPage: React.FC = () => {
               className="w-full py-3 bg-[#2D6A4F] hover:bg-[#1B4332] active:scale-98 text-white rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-between px-4"
             >
               <span>Thanh toán đơn hàng</span>
-              <span className="font-['Outfit'] text-sm tabular-nums">{formatVND(payableTotal)}</span>
+              <span className="font-sans text-sm tabular-nums">{formatVND(payableTotal)}</span>
             </button>
           </div>
         )}
@@ -397,7 +397,7 @@ export const PosPage: React.FC = () => {
           <div className="w-full max-w-md bg-white rounded-2xl border border-[#E5DFCE] shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between pb-3 border-b border-[#F2EDE2]">
               <div>
-                <h3 className="font-['Outfit'] font-bold text-base text-[#1B4332]">
+                <h3 className="font-sans font-bold text-base text-[#1B4332]">
                   Thanh toán &amp; Xuất hóa đơn
                 </h3>
                 <p className="text-xs text-[#5D7067]">Số tiền cần thanh toán: {formatVND(payableTotal)}</p>
@@ -465,7 +465,7 @@ export const PosPage: React.FC = () => {
 
                 <div className="pt-2 border-t border-[#DED6C3] flex items-center justify-between text-xs font-bold">
                   <span className="text-[#5D7067]">Tiền thối lại cho khách:</span>
-                  <span className="text-sm font-['Outfit'] text-[#EA580C] tabular-nums">
+                  <span className="text-sm font-sans text-[#EA580C] tabular-nums">
                     {formatVND(changeDue)}
                   </span>
                 </div>

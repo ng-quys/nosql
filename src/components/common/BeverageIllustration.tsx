@@ -1,6 +1,33 @@
 import React from 'react';
 import { Drink } from '../../types';
 
+// Files in public/images are served directly from /images by Vite.
+const drinkImages: Record<string, string> = {
+  P001: '/images/MangoSmoothie.png',
+  P002: '/images/StrawberrySmoothie.png',
+  P003: '/images/AvocadoSmoothie.png',
+  P004: '/images/OrangeJuice.png',
+  P005: '/images/WatermelonJuice.jpg',
+  P006: '/images/PineappleJuice.png',
+  P007: '/images/PassionFruitJuice.png',
+  P008: '/images/MixedBerrySmoothie.png',
+  P009: '/images/GuavaJuice.png',
+  P010: '/images/GreenDetox.png',
+  P011: '/images/TropicalCombo.png',
+  P012: '/images/BerryCombo.png',
+  drink_1: '/images/AvocadoSmoothie.png',
+  drink_2: '/images/MangoSmoothie.png',
+  drink_3: '/images/StrawberrySmoothie.png',
+  drink_5: '/images/MixedBerrySmoothie.png',
+  drink_6: '/images/OrangeJuice.png',
+  drink_7: '/images/WatermelonJuice.jpg',
+  drink_8: '/images/PineappleJuice.png',
+  drink_9: '/images/GuavaJuice.png',
+  drink_10: '/images/PassionFruitJuice.png',
+  drink_11: '/images/TropicalCombo.png',
+  drink_12: '/images/GreenDetox.png',
+};
+
 interface BeverageIllustrationProps {
   drink: Drink;
   className?: string;
@@ -18,6 +45,19 @@ export const BeverageIllustration: React.FC<BeverageIllustrationProps> = ({
     lg: 'w-48 h-64',
     hero: 'w-64 h-80 md:w-80 md:h-96',
   };
+
+  const imageSrc = drinkImages[drink.id];
+  if (imageSrc) {
+    return (
+      <div className={`relative flex items-center justify-center select-none ${dimensions[size]} ${className}`}>
+        <img
+          src={imageSrc}
+          alt={drink.name}
+          className="w-full h-full object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-105"
+        />
+      </div>
+    );
+  }
 
   // Color mapping based on Vietnamese fruit drinks
   const getGradientColors = () => {

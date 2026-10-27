@@ -115,7 +115,7 @@ export class OrderService {
       customerPhone: orderData.customerPhone,
       tableNumber: orderData.tableNumber,
       orderType: orderData.orderType || 'dine_in',
-      discount: sanitizePrice(orderData.discount, 0),
+      promotionCode: (orderData as any).promotionCode,
       payment: orderData.paymentMethod || 'cash',
       paymentMethod: orderData.paymentMethod || 'cash',
       paymentStatus: orderData.paymentStatus || 'paid',

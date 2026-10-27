@@ -108,7 +108,7 @@ export const DrinkCustomizerModal: React.FC = () => {
               <span className="text-xs uppercase tracking-wider font-semibold text-[#6CAE8F]">
                 {getCategoryLabel(drink.category)}
               </span>
-              <h3 className="font-['Outfit'] font-bold text-lg text-[#1B4332] mt-0.5">
+              <h3 className="font-sans font-bold text-lg text-[#1B4332] mt-0.5">
                 {drink.name}
               </h3>
               <p className="text-xs text-[#5D7067] mt-1 tabular-nums">

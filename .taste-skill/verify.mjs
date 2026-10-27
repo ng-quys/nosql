@@ -1,0 +1,62 @@
+import { Browser, sleep } from 'file:///C:/Users/Quys/.agents/skills/design-taste-frontend/scripts/lib/cdp.mjs';
+import { writeFileSync } from 'node:fs';
+const browser = await Browser.launch();
+const results = [];
+const assert = (name, ok, detail) => { results.push({name, passed:!!ok, detail}); if (!ok) throw new Error(name + ': ' + JSON.stringify(detail)); };
+try {
+ const page = await browser.newPage({width:1440,height:900});
+ await page.goto('http://127.0.0.1:3002');
+ await page.eval(async () => { for(let i=0;i<100 && !document.querySelector('.fresh-product');i++) await new Promise(r => setTimeout(r,100)); });
+ for (const width of [375,768,1024,1440]) {
+  await page.setViewport({width,height:900, mobile:width <600}); await sleep(250);
+  const metric = await page.eval(() => ({viewport:innerWidth, width:document.documentElement.scrollWidth, cards:document.querySelectorAll('.fresh-product').length, broken:[...document.images].filter(i=>!i.complete||!i.naturalWidth).map(i=>i.src), headline:document.querySelector('h1').getBoundingClientRect().height / parseFloat(getComputedStyle(document.querySelector('h1')).lineHeight)}));
+  assert(`Responsive ${width}px`, metric.width <= width && metric.broken.length === 0 && metric.headline <2.1,metric);
+  await page.screenshot({path:`.taste-skill/after/verified-${width}.jpg`,fullPage:true});
+ }
+ const heroBefore = await page.eval(() => document.querySelector('.fresh-hero-ticket h2').textContent);
+ await page.eval(() => document.querySelectorAll('.fresh-flavors button')[1].click()); await sleep(200);
+ assert('Hero flavor selection', await page.eval(() => document.querySelector('.fresh-hero-ticket h2').textContent !== document.querySelectorAll('.fresh-flavors button')[0].getAttribute('aria-label').replace('Xem ','')),heroBefore);
+ await page.eval(() => document.querySelectorAll('.fresh-categories button')[1].click()); await sleep(150);
+ assert('Category filter', await page.eval(() => document.querySelectorAll('.fresh-product').length > 0 && document.querySelectorAll('.fresh-categories button')[1].getAttribute('aria-pressed') === 'true'));
+ await page.eval(() => document.querySelector('.fresh-categories button').click());
+ await page.eval(() => document.querySelector('.fresh-product-info button').click()); await sleep(150);
+ assert('Product customizer', await page.eval(() => !!document.querySelector('[role=dialog]')));
+ await page.eval(() => { const b=[...document.querySelectorAll('[role=dialog] button')].find(b=>b.textContent.includes('70%')); if(b)b.click(); document.querySelector('[aria-label="Tăng số lượng"]').click(); });
+ await page.eval(() => [...document.querySelectorAll('[role=dialog] button')].find(b=>b.textContent.includes('Thêm vào đơn hàng')).click()); await sleep(150);
+ assert('Customized quantity updates cart', await page.eval(() => document.querySelector('[aria-label="Xem giỏ hàng"]').textContent.includes('2')));
+ await page.eval(() => document.querySelector('[aria-label="Xem giỏ hàng"]').click()); await sleep(150);
+ assert('Cart opens with items', await page.eval(() => document.body.innerText.includes('Giỏ hàng của bạn') && document.body.innerText.includes('70%')));
+ await page.eval(() => document.querySelector('[aria-label="Đóng giỏ hàng"]').click());
+ await page.eval(() => document.querySelector('[aria-label="Thông báo hệ thống"]').click()); await sleep(150);
+ assert('Notifications open', await page.eval(() => document.body.innerText.includes('Hoạt động cửa hàng')));
+ await page.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape'}); await sleep(100);
+ assert('Escape closes popover', await page.eval(() => document.querySelector('[aria-label="Thông báo hệ thống"]').getAttribute('aria-expanded') === 'false'));
+ await page.eval(() => document.querySelector('[title="Đổi vai trò người dùng hệ thống"]').click()); await sleep(100);
+ assert('Role menu preserved', await page.eval(() => document.body.innerText.includes('Nhân viên bán hàng (POS)')));
+ await page.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape'});
+ await page.setViewport({width:375,height:812,mobile:true});
+ await page.eval(() => document.querySelector('[aria-label="Mở thanh điều hướng"]').click()); await sleep(100);
+ assert('Mobile navigation',await page.eval(() => document.querySelector('[aria-label="Mở thanh điều hướng"]').getAttribute('aria-expanded')==='true'));
+ await page.eval(() => [...document.querySelectorAll('header a')].find(a=>a.textContent==='Khuyến mãi' && a.getBoundingClientRect().width).click()); await sleep(800);
+ assert('Promotion anchor',await page.eval(() => location.hash==='#khuyen-mai' && document.querySelector('[aria-label="Mở thanh điều hướng"]').getAttribute('aria-expanded')==='false'));
+ await page.goto('http://127.0.0.1:3002/menu');
+ assert('Menu route',await page.eval(() => document.body.innerText.includes('Tất cả món')));
+ await page.goto('http://127.0.0.1:3002/track');
+ assert('Tracking route',await page.eval(() => !!document.querySelector('main input')));
+ await page.goto('http://127.0.0.1:3002/login');
+ assert('Login route',await page.eval(() => !!document.querySelector('input[type="password"]')));
+ assert('No unhandled browser exceptions', page.consoleErrors.length===0,page.consoleErrors);
+ const offline = await browser.newPage({width:375,height:812,mobile:true});
+ await offline.send('Network.enable');
+ await offline.send('Network.setBlockedURLs',{urls:['*api/products*']});
+ await offline.goto('http://127.0.0.1:3002'); await sleep(500);
+ assert('Product API failure UI',await offline.eval(() => !!document.querySelector('.fresh-empty[role="alert"]')));
+ await offline.send('Network.setBlockedURLs',{urls:[]});
+ await offline.eval(() => document.querySelector('.fresh-empty button').click());
+ await offline.eval(async () => {for(let i=0;i<100 && !document.querySelector('.fresh-product');i++) await new Promise(r=>setTimeout(r,100));});
+ assert('Product API retry recovery', await offline.eval(() => !!document.querySelector('.fresh-product')));
+ await page.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+ await page.goto('http://127.0.0.1:3002');
+ assert('Reduced motion',await page.eval(() => getComputedStyle(document.querySelector('.fresh-hero-copy h1')).animationName === 'none'));
+} finally { writeFileSync('.taste-skill/regression-results.json',JSON.stringify(results,null,2)); console.log(JSON.stringify(results,null,2)); await browser.close(); }
+

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { Recipe } from '../models/Recipe';
 import { isDbConnected } from '../config/db';
+import { authenticate, authorize } from '../middleware/auth';
 
 const router = Router();
 
@@ -44,7 +45,7 @@ router.get('/product/:productId', async (req: Request, res: Response): Promise<v
 });
 
 // POST /api/recipes
-router.post('/', async (req: Request, res: Response): Promise<void> => {
+router.post('/', authenticate, authorize('MANAGER'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { productId, ingredientId, quantity, unit, name, instructions } = req.body;
 
@@ -84,7 +85,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 });
 
 // PUT /api/recipes/:id
-router.put('/:id', async (req: Request, res: Response): Promise<void> => {
+router.put('/:id', authenticate, authorize('MANAGER'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -115,7 +116,7 @@ router.put('/:id', async (req: Request, res: Response): Promise<void> => {
 });
 
 // DELETE /api/recipes/:id
-router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
+router.delete('/:id', authenticate, authorize('MANAGER'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
 

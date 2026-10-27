@@ -1,0 +1,11 @@
+import React, { useEffect, useState } from 'react';
+import { Copy, Tag } from 'lucide-react';
+import { PromotionItem, PromotionService } from '../../services/promotionService';
+import { formatVND } from '../../utils/formatters';
+
+export const PromotionsPage: React.FC = () => {
+  const [items,setItems]=useState<PromotionItem[]>([]); const [copied,setCopied]=useState(''); const [error,setError]=useState('');
+  useEffect(()=>{PromotionService.getPromotions().then(p=>setItems(p.filter(x=>x.isActive))).catch(e=>setError(e.message))},[]);
+  const copy=async(code:string)=>{await navigator.clipboard.writeText(code);setCopied(code);window.setTimeout(()=>setCopied(''),1500)};
+  return <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12"><div className="max-w-2xl"><h1 className="text-3xl font-bold text-[#1B4332]">Ưu đãi đang áp dụng</h1><p className="mt-3 text-[#5D7067]">Chọn mã phù hợp, sao chép và nhập tại giỏ hàng. Điều kiện được kiểm tra trực tiếp trước khi tạo đơn.</p></div>{error&&<p className="mt-8 text-[#9A3412]">{error}</p>}<div className="mt-10 grid md:grid-cols-2 gap-4">{items.map(p=><article key={p.id} className="bg-white border border-[#E5DFCE] rounded-2xl p-5"><div className="flex items-start justify-between gap-4"><div><Tag className="w-5 h-5 text-[#EA580C] mb-4"/><h2 className="text-xl font-bold text-[#1B4332]">{p.title}</h2><p className="mt-2 text-sm text-[#5D7067]">{p.description}</p></div><strong className="text-xl text-[#EA580C] tabular-nums whitespace-nowrap">{p.discountType==='percentage'?`${p.discountValue}%`:formatVND(p.discountValue)}</strong></div><div className="mt-5 pt-4 border-t border-[#F0ECE3] flex items-center justify-between gap-3"><div><span className="font-bold text-[#1B4332] tracking-wide">{p.code}</span><p className="text-xs text-[#6B7D74]">Đơn từ {formatVND(p.minOrderAmount||0)}</p></div><button onClick={()=>copy(p.code)} className="h-9 px-3 rounded-lg bg-[#1B4332] text-white text-sm font-semibold flex items-center gap-2"><Copy className="w-4 h-4"/>{copied===p.code?'Đã sao chép':'Sao chép mã'}</button></div></article>)}</div>{!error&&items.length===0&&<p className="mt-10 p-8 bg-white border border-[#E5DFCE] rounded-xl text-center text-[#5D7067]">Hiện chưa có ưu đãi đang hoạt động.</p>}</div>;
+};

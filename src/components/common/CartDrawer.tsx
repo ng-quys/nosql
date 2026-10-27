@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   X,
@@ -17,6 +17,7 @@ import confetti from 'canvas-confetti';
 import { useStore } from '../../context/StoreContext';
 import { OrderType, PaymentMethod } from '../../types';
 import { formatVND } from '../../utils/formatters';
+import { PromotionService } from '../../services/promotionService';
 
 export const CartDrawer: React.FC = () => {
   const {
@@ -46,22 +47,34 @@ export const CartDrawer: React.FC = () => {
   const [couponCode, setCouponCode] = useState('');
   const [appliedDiscount, setAppliedDiscount] = useState<number>(0);
   const [couponError, setCouponError] = useState('');
+  const [appliedCode, setAppliedCode] = useState('');
+  const [isCheckingCoupon, setIsCheckingCoupon] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isCartDrawerOpen) return null;
 
-  const handleApplyCoupon = (e: React.FormEvent) => {
+  useEffect(() => {
+    setAppliedDiscount(0);
+    setAppliedCode('');
+  }, [cartSubtotal]);
+
+  const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     setCouponError('');
     const code = couponCode.trim().toUpperCase();
-    if (code === 'TUOIMOINGAY' || code === 'FRESHLEAF10') {
-      const disc = Math.round(cartSubtotal * 0.10);
-      setAppliedDiscount(disc);
-    } else if (code === 'GIAM10K') {
-      setAppliedDiscount(Math.min(10000, cartSubtotal));
-    } else {
-      setCouponError('Mã không hợp lệ. Thử TUOIMOINGAY hoặc GIAM10K');
+    if (!code) return;
+    setIsCheckingCoupon(true);
+    try {
+      const result = await PromotionService.validate(code, cartSubtotal);
+      setAppliedDiscount(result.discount);
+      setAppliedCode(result.promotion.code);
+    } catch (error: any) {
+      setAppliedDiscount(0);
+      setAppliedCode('');
+      setCouponError(error.message || 'Mã khuyến mãi không hợp lệ');
+    } finally {
+      setIsCheckingCoupon(false);
     }
   };
 
@@ -80,6 +93,7 @@ export const CartDrawer: React.FC = () => {
         items: [...cart],
         subtotal: cartSubtotal,
         discount: appliedDiscount,
+        promotionCode: appliedCode || undefined,
         tax: 0,
         totalAmount: finalTotal,
         status: 'waiting',
@@ -125,7 +139,7 @@ export const CartDrawer: React.FC = () => {
               <ShoppingBag className="w-4 h-4" />
             </span>
             <div>
-              <h2 className="text-sm font-bold text-[#1B4332] font-['Outfit']">Giỏ hàng của bạn</h2>
+              <h2 className="text-sm font-bold text-[#1B4332] font-sans">Giỏ hàng của bạn</h2>
               <p className="text-[11px] text-[#5D7067] tabular-nums">
                 {cart.length} món đang chọn
               </p>
@@ -147,7 +161,7 @@ export const CartDrawer: React.FC = () => {
               <div className="w-14 h-14 rounded-full bg-[#F7F4EA] flex items-center justify-center text-[#2D6A4F] border border-[#E5DFCE]">
                 <ShoppingBag className="w-6 h-6 stroke-[1.5]" />
               </div>
-              <h3 className="font-['Outfit'] font-bold text-base text-[#1B4332]">
+              <h3 className="font-sans font-bold text-base text-[#1B4332]">
                 Giỏ hàng đang trống
               </h3>
               <p className="text-xs text-[#5D7067] max-w-xs leading-relaxed">
@@ -351,9 +365,10 @@ export const CartDrawer: React.FC = () => {
                   </div>
                   <button
                     type="submit"
+                    disabled={isCheckingCoupon}
                     className="px-3 py-1.5 bg-[#FAF8F2] border border-[#E5DFCE] text-xs font-semibold rounded-lg hover:bg-[#F2EDE2] text-[#1B4332]"
                   >
-                    Áp dụng
+                    {isCheckingCoupon ? 'Đang kiểm tra' : 'Áp dụng'}
                   </button>
                 </form>
                 {appliedDiscount > 0 && (
@@ -387,7 +402,7 @@ export const CartDrawer: React.FC = () => {
               )}
               <div className="pt-2 border-t border-[#E5DFCE] flex justify-between text-sm font-bold text-[#1B4332]">
                 <span>Tổng thanh toán</span>
-                <span className="text-base font-['Outfit'] tabular-nums text-[#EA580C]">
+                <span className="text-base font-sans tabular-nums text-[#EA580C]">
                   {formatVND(finalTotal)}
                 </span>
               </div>

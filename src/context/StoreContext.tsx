@@ -18,9 +18,10 @@ import { sanitizePrice } from '../utils/formatters';
 
 interface StoreContextType {
   currentUser: User | null;
+  authReady: boolean;
   role: UserRole;
   switchRole: (role: UserRole) => Promise<void>;
-  login: (email: string, pass: string) => Promise<void>;
+  login: (email: string, pass: string) => Promise<User>;
   logout: () => Promise<void>;
 
   products: Drink[];
@@ -65,6 +66,7 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState(false);
   const [products, setProducts] = useState<Drink[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -79,8 +81,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     async function init() {
       try {
         AuthService.getCurrentUser()
-          .then((user) => { if (user) setCurrentUser(user); })
-          .catch(() => {});
+          .then((user) => setCurrentUser(user))
+          .catch(() => setCurrentUser(null))
+          .finally(() => setAuthReady(true));
 
         const [drinksData, ordersData, ingredientsData] = await Promise.all([
           ProductService.getAllDrinks().catch((err) => {
@@ -140,7 +143,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const login = async (email: string, pass: string) => {
     const user = await AuthService.login(email, pass);
     setCurrentUser(user);
+    const [freshOrders, freshIngredients] = await Promise.all([
+      user.role === 'customer' ? OrderService.getOrders({ customerId: user.id }).catch(() => []) : OrderService.getOrders().catch(() => []),
+      user.role === 'customer' ? Promise.resolve([]) : InventoryService.getIngredients().catch(() => []),
+    ]);
+    setOrders(freshOrders);
+    if (user.role !== 'customer') setIngredients(freshIngredients);
     addNotification('Đăng nhập thành công', `Chào mừng ${user.name} quay trở lại!`, 'success');
+    return user;
   };
 
   const logout = async () => {
@@ -294,6 +304,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     <StoreContext.Provider
       value={{
         currentUser,
+        authReady,
         role,
         switchRole,
         login,

@@ -52,12 +52,12 @@ export const ProfilePage: React.FC = () => {
       {/* Tiêu đề tài khoản */}
       <div className="bg-white rounded-3xl border border-[#E5DFCE] p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 shadow-xs">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-[#E2F1E9] border border-[#C5E3D3] flex items-center justify-center text-[#1B4332] font-['Outfit'] font-bold text-2xl">
+          <div className="w-16 h-16 rounded-2xl bg-[#E2F1E9] border border-[#C5E3D3] flex items-center justify-center text-[#1B4332] font-sans font-bold text-2xl">
             {currentUser.avatar || currentUser.name.slice(0, 2).toUpperCase()}
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <h1 className="font-['Outfit'] font-bold text-2xl text-[#1B4332]">
+              <h1 className="font-sans font-bold text-2xl text-[#1B4332]">
                 {currentUser.name}
               </h1>
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]">
@@ -85,7 +85,7 @@ export const ProfilePage: React.FC = () => {
         <div className="p-5 rounded-2xl bg-[#1B4332] text-white space-y-1 sm:col-span-2 shadow-sm">
           <span className="text-xs font-semibold uppercase text-[#9BCBB4]">Điểm thưởng tích lũy</span>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold font-['Outfit'] tabular-nums text-[#FED7AA]">
+            <span className="text-3xl font-bold font-sans tabular-nums text-[#FED7AA]">
               {currentUser.loyaltyPoints || 350} Điểm
             </span>
             <span className="text-xs text-[#C5E3D3]">&bull; 100 điểm = 1 ly miễn phí</span>
@@ -100,7 +100,7 @@ export const ProfilePage: React.FC = () => {
             <span className="text-xs font-semibold uppercase">Tổng số ly đã gọi</span>
             <Award className="w-4 h-4 text-[#EA580C]" />
           </div>
-          <h3 className="font-['Outfit'] text-2xl font-bold text-[#1B4332] tabular-nums">
+          <h3 className="font-sans text-2xl font-bold text-[#1B4332] tabular-nums">
             {Math.max(6, userOrders.length * 2)} Ly
           </h3>
           <p className="text-[11px] text-[#889C92]">Thành viên thân thiết tại chi nhánh Q.1</p>
@@ -110,7 +110,7 @@ export const ProfilePage: React.FC = () => {
       {/* Khẩu vị pha chế yêu thích */}
       <div className="bg-white rounded-3xl border border-[#E5DFCE] p-6 space-y-4">
         <div className="pb-3 border-b border-[#F2EDE2]">
-          <h3 className="font-['Outfit'] font-bold text-base text-[#1B4332]">
+          <h3 className="font-sans font-bold text-base text-[#1B4332]">
             Khẩu vị pha chế mặc định
           </h3>
           <p className="text-xs text-[#5D7067]">
@@ -170,7 +170,7 @@ export const ProfilePage: React.FC = () => {
 
       {/* Lịch sử hóa đơn gần đây */}
       <div className="bg-white rounded-3xl border border-[#E5DFCE] p-6 space-y-4">
-        <h3 className="font-['Outfit'] font-bold text-base text-[#1B4332]">
+        <h3 className="font-sans font-bold text-base text-[#1B4332]">
           Lịch sử hóa đơn của bạn
         </h3>
 
@@ -193,7 +193,7 @@ export const ProfilePage: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-3">
-                <span className="font-bold text-sm font-['Outfit'] text-[#1B4332] tabular-nums">
+                <span className="font-bold text-sm font-sans text-[#1B4332] tabular-nums">
                   {formatVND(ord.totalAmount)}
                 </span>
                 <button

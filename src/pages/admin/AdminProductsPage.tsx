@@ -1,18 +1,26 @@
-import React, { useState } from 'react';
-import { Plus, Edit, Trash2, X, Search } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Plus, Edit, Trash2, X, Search, Upload, Download } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { BeverageIllustration } from '../../components/common/BeverageIllustration';
 import { Category, Drink } from '../../types';
 import { formatVND, sanitizePrice } from '../../utils/formatters';
+import { ProductImportRow, ProductImportService } from '../../services/productImportService';
+import { Pagination } from '../../components/common/Pagination';
 
 export const AdminProductsPage: React.FC = () => {
   const { products, addProduct, updateProduct, deleteProduct } = useStore();
 
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState<Category | 'all'>('all');
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDrink, setEditingDrink] = useState<Drink | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [csvText, setCsvText] = useState('');
+  const [previewRows, setPreviewRows] = useState<ProductImportRow[]>([]);
+  const [importMessage, setImportMessage] = useState('');
 
   // Form fields
   const [formName, setFormName] = useState('');
@@ -35,6 +43,8 @@ export const AdminProductsPage: React.FC = () => {
     }
     return true;
   });
+  useEffect(() => setPage(1), [search, filterCat]);
+  const pagedProducts = filteredProducts.slice((page - 1) * pageSize, page * pageSize);
 
   const handleOpenAdd = () => {
     setEditingDrink(null);
@@ -118,6 +128,19 @@ export const AdminProductsPage: React.FC = () => {
     return 'Combo';
   };
 
+  const readCsv = async (file?: File) => {
+    if (!file) return;
+    setCsvText(await file.text()); setPreviewRows([]); setImportMessage('');
+  };
+  const previewCsv = async () => {
+    try { const result = await ProductImportService.preview(csvText); setPreviewRows(result.rows); setImportMessage(`${result.validCount} dòng hợp lệ, ${result.errorCount} dòng cần sửa.`); }
+    catch (error: any) { setImportMessage(error.message); }
+  };
+  const importCsv = async () => {
+    try { const result = await ProductImportService.import(csvText); setImportMessage(`Đã import ${result.imported} sản phẩm.`); window.setTimeout(()=>window.location.reload(),700); }
+    catch (error: any) { setImportMessage(error.message); }
+  };
+
   return (
     <div className="space-y-6">
       {/* Bộ lọc & Thêm món */}
@@ -133,7 +156,7 @@ export const AdminProductsPage: React.FC = () => {
               <button
                 key={c.id}
                 onClick={() => setFilterCat(c.id as Category | 'all')}
-                className={`px-3 py-1.5 font-semibold rounded-lg transition-all ${
+                className={`px-3 py-1.5 font-semibold rounded-lg transition-colors ${
                   filterCat === c.id ? 'bg-white text-[#1B4332] shadow-xs' : 'text-[#5D7067]'
                 }`}
               >
@@ -154,14 +177,10 @@ export const AdminProductsPage: React.FC = () => {
           </div>
         </div>
 
-        <button
-          onClick={handleOpenAdd}
-          className="px-4 py-2 bg-[#2D6A4F] hover:bg-[#1B4332] text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-sm transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Thêm món uống mới</span>
-        </button>
+        <div className="flex gap-2"><button onClick={()=>ProductImportService.download().catch(e=>setImportMessage(e.message))} className="px-3 py-2 border border-[#D8D3C7] text-[#1B4332] text-xs font-semibold rounded-lg flex items-center gap-1.5"><Download className="w-4 h-4"/>Xuất CSV</button><button onClick={()=>setImportOpen(true)} className="px-3 py-2 border border-[#D8D3C7] text-[#1B4332] text-xs font-semibold rounded-lg flex items-center gap-1.5"><Upload className="w-4 h-4"/>Import CSV</button><button onClick={handleOpenAdd} className="px-4 py-2 bg-[#2D6A4F] hover:bg-[#1B4332] text-white text-xs font-semibold rounded-lg flex items-center gap-1.5"><Plus className="w-4 h-4" /><span>Thêm món</span></button></div>
       </div>
+
+      {importMessage && !importOpen && <p className="p-3 rounded-lg bg-[#FFF7ED] text-[#9A3412] text-sm">{importMessage}</p>}
 
       {/* Bảng danh sách món */}
       <div className="bg-white rounded-2xl border border-[#E5DFCE] overflow-hidden shadow-xs">
@@ -178,7 +197,7 @@ export const AdminProductsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F2EDE2]">
-              {filteredProducts.map((drink) => (
+              {pagedProducts.map((drink) => (
                 <tr key={drink.id} className="hover:bg-[#FCFBF7] transition-colors">
                   <td className="py-3.5 px-4">
                     <div className="flex items-center gap-3">
@@ -196,7 +215,7 @@ export const AdminProductsPage: React.FC = () => {
                   <td className="py-3.5 px-4 max-w-xs text-[#5D7067]">
                     <p className="line-clamp-2">{drink.ingredients.join(', ')}</p>
                   </td>
-                  <td className="py-3.5 px-4 font-bold text-[#1B4332] font-['Outfit'] text-sm tabular-nums">
+                  <td className="py-3.5 px-4 font-bold text-[#1B4332] font-sans text-sm tabular-nums">
                     {formatVND(drink.basePrice)}
                   </td>
                   <td className="py-3.5 px-4 text-[#5D7067] tabular-nums">
@@ -236,14 +255,16 @@ export const AdminProductsPage: React.FC = () => {
             </tbody>
           </table>
         </div>
+        <div className="px-4 pb-4"><Pagination page={page} pageSize={pageSize} totalItems={filteredProducts.length} onPageChange={setPage} /></div>
       </div>
 
       {/* Modal Thêm / Sửa món */}
+      {importOpen && <div className="fixed inset-0 z-50 bg-black/50 grid place-items-center p-4"><div className="w-full max-w-3xl max-h-[85vh] overflow-auto bg-white rounded-xl p-5 space-y-4"><div className="flex justify-between"><div><h3 className="font-bold text-[#1B4332]">Import sản phẩm từ CSV</h3><p className="text-xs text-[#5D7067] mt-1">Cột bắt buộc: name, categoryId, price. Hệ thống chỉ thêm mới và không ghi đè sản phẩm hiện có.</p></div><button onClick={()=>setImportOpen(false)}><X className="w-5 h-5"/></button></div><input type="file" accept=".csv,text/csv" onChange={e=>readCsv(e.target.files?.[0])} className="block w-full text-sm"/>{csvText&&<div className="flex gap-2"><button onClick={previewCsv} className="h-9 px-4 rounded-lg border border-[#D8D3C7] text-sm font-semibold">Xem trước và kiểm tra</button><button onClick={importCsv} disabled={!previewRows.length||previewRows.some(r=>r.errors.length>0)} className="h-9 px-4 rounded-lg bg-[#1B4332] text-white text-sm font-semibold disabled:opacity-40">Xác nhận import</button></div>}{importMessage&&<p className="text-sm text-[#9A3412]">{importMessage}</p>}{previewRows.length>0&&<div className="overflow-x-auto border border-[#E5DFCE] rounded-lg"><table className="w-full text-xs"><thead><tr className="text-left"><th className="p-2">Dòng</th><th className="p-2">Tên</th><th className="p-2">Danh mục</th><th className="p-2 text-right">Giá</th><th className="p-2">Kết quả</th></tr></thead><tbody>{previewRows.map(row=><tr key={row.row} className="border-t border-[#F0ECE3]"><td className="p-2">{row.row}</td><td className="p-2">{row.data.name}</td><td className="p-2">{row.data.categoryId}</td><td className="p-2 text-right tabular-nums">{formatVND(row.data.price)}</td><td className={`p-2 ${row.errors.length?'text-[#9F1239]':'text-[#247B50]'}`}>{row.errors.join('; ')||'Hợp lệ'}</td></tr>)}</tbody></table></div>}</div></div>}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="w-full max-w-lg bg-white rounded-2xl border border-[#E5DFCE] shadow-2xl p-6 space-y-4 my-8">
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="w-full max-w-lg bg-white rounded-2xl border border-[#E5DFCE] p-6 space-y-4 my-8">
             <div className="flex items-center justify-between pb-3 border-b border-[#F2EDE2]">
-              <h3 className="font-['Outfit'] font-bold text-base text-[#1B4332]">
+              <h3 className="font-sans font-bold text-base text-[#1B4332]">
                 {editingDrink ? 'Chỉnh sửa: ' + editingDrink.name : 'Tạo món uống mới'}
               </h3>
               <button

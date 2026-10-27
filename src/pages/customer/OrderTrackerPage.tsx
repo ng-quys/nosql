@@ -86,7 +86,7 @@ export const OrderTrackerPage: React.FC = () => {
           <span className="text-xs font-semibold uppercase tracking-wider text-[#6CAE8F]">
             Cập nhật tiến độ pha chế trực tiếp
           </span>
-          <h1 className="font-['Outfit'] text-3xl sm:text-4xl font-extrabold text-[#1B4332] tracking-tight mt-1">
+          <h1 className="font-sans text-3xl sm:text-4xl font-extrabold text-[#1B4332] tracking-tight mt-1">
             Theo dõi đơn hàng &amp; Hóa đơn
           </h1>
           <p className="text-xs sm:text-sm text-[#5D7067] mt-1">
@@ -120,7 +120,7 @@ export const OrderTrackerPage: React.FC = () => {
                   &bull; {getOrderTypeLabel(activeOrder.orderType)} {activeOrder.tableNumber ? `(${activeOrder.tableNumber})` : ''}
                 </span>
               </div>
-              <h2 className="font-['Outfit'] font-bold text-xl text-[#1B4332]">
+              <h2 className="font-sans font-bold text-xl text-[#1B4332]">
                 Đơn của khách: {activeOrder.customerName}
               </h2>
             </div>
@@ -204,7 +204,7 @@ export const OrderTrackerPage: React.FC = () => {
 
             <div className="pt-2 flex items-center justify-between text-xs font-bold text-[#1B4332]">
               <span>Tổng thanh toán ({activeOrder.paymentMethod === 'cash' ? 'Tiền mặt' : activeOrder.paymentMethod === 'qr_code' ? 'Chuyển khoản' : 'Thẻ'})</span>
-              <span className="text-sm font-['Outfit'] tabular-nums text-[#EA580C]">
+              <span className="text-sm font-sans tabular-nums text-[#EA580C]">
                 {formatVND(activeOrder.totalAmount)}
               </span>
             </div>
@@ -215,7 +215,7 @@ export const OrderTrackerPage: React.FC = () => {
       {/* Lịch sử các đơn hàng */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-['Outfit'] font-bold text-xl text-[#1B4332]">
+          <h3 className="font-sans font-bold text-xl text-[#1B4332]">
             Lịch sử đơn hàng gần đây ({filteredOrders.length})
           </h3>
           <span className="text-xs text-[#889C92]">Đồng bộ tự động cùng quầy thu ngân &amp; pha chế</span>

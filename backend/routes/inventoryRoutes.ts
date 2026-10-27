@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { Inventory } from '../models/Inventory';
 import { Ingredient } from '../models/Ingredient';
 import { isDbConnected } from '../config/db';
+import { authenticate, authorize } from '../middleware/auth';
 
 const router = Router();
 
@@ -64,7 +65,7 @@ function buildInventoryPipeline(matchQuery: any = {}) {
 
 // GET /api/inventory
 // Reads from inventory collection and joins ingredients via ingredientId
-router.get('/', async (_req: Request, res: Response): Promise<void> => {
+router.get('/', authenticate, authorize('MANAGER', 'STAFF', 'BARISTA'), async (_req: Request, res: Response): Promise<void> => {
   try {
     if (!isDbConnected()) {
       res.status(503).json({ success: false, message: 'Không thể kết nối MongoDB' });
@@ -109,7 +110,7 @@ router.get('/', async (_req: Request, res: Response): Promise<void> => {
 
 // GET /api/inventory/low-stock
 // Low stock condition: quantity <= minStock
-router.get('/low-stock', async (_req: Request, res: Response): Promise<void> => {
+router.get('/low-stock', authenticate, authorize('MANAGER', 'STAFF', 'BARISTA'), async (_req: Request, res: Response): Promise<void> => {
   try {
     if (!isDbConnected()) {
       res.status(503).json({ success: false, message: 'Không thể kết nối MongoDB' });
@@ -134,7 +135,7 @@ router.get('/low-stock', async (_req: Request, res: Response): Promise<void> => 
 
 // PUT /api/inventory/:id
 // Updates quantity and/or minStock
-router.put('/:id', async (req: Request, res: Response): Promise<void> => {
+router.put('/:id', authenticate, authorize('MANAGER'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const { quantity, minStock, ...rest } = req.body;
@@ -180,7 +181,7 @@ router.put('/:id', async (req: Request, res: Response): Promise<void> => {
 
 // PUT /api/inventory/:id/restock
 // Increments inventory quantity
-router.put('/:id/restock', async (req: Request, res: Response): Promise<void> => {
+router.put('/:id/restock', authenticate, authorize('MANAGER', 'STAFF'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const { amount } = req.body;

@@ -34,7 +34,7 @@ export const RegisterPage: React.FC = () => {
           <div className="w-10 h-10 rounded-xl bg-[#2D6A4F] text-white mx-auto flex items-center justify-center font-bold">
             <Leaf className="w-5 h-5" />
           </div>
-          <h1 className="font-['Outfit'] font-bold text-2xl text-[#1B4332]">
+          <h1 className="font-sans font-bold text-2xl text-[#1B4332]">
             Đăng ký thành viên FreshLeaf
           </h1>
           <p className="text-xs text-[#5D7067]">

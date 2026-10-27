@@ -5,33 +5,42 @@ import { useStore } from '../../context/StoreContext';
 import { UserRole } from '../../types';
 
 export const LoginPage: React.FC = () => {
-  const { login, switchRole } = useStore();
+  const { login } = useStore();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleRoleQuickLogin = async (role: UserRole) => {
-    setLoading(true);
-    try {
-      await switchRole(role);
-      if (role === 'staff') navigate('/pos');
-      else if (role === 'barista') navigate('/kds');
-      else if (role === 'manager') navigate('/admin');
-      else navigate('/menu');
-    } finally {
-      setLoading(false);
-    }
+  const handleRoleQuickLogin = (role: UserRole) => {
+    const demoPassword = String(import.meta.env.VITE_DEMO_PASSWORD || '');
+    setEmail(`demo_${role}`);
+    setPassword(demoPassword);
+    setError(demoPassword ? 'Đã điền tài khoản demo. Bấm Đăng nhập để tiếp tục.' : 'Máy chưa cấu hình VITE_DEMO_PASSWORD trong .env.local.');
+    requestAnimationFrame(() => document.getElementById('login-submit')?.focus());
   };
 
   const handleManualLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    const form = e.currentTarget as HTMLFormElement;
+    const formData = new FormData(form);
+    const submittedIdentifier = String(formData.get('identifier') || email).trim();
+    const submittedPassword = String(formData.get('password') || password);
+    if (!submittedIdentifier || !submittedPassword) {
+      setError('Vui lòng nhập username hoặc email và mật khẩu.');
+      return;
+    }
     setLoading(true);
+    setError('');
     try {
-      await login(email, password);
-      navigate('/menu');
+      const user = await login(submittedIdentifier, submittedPassword);
+      if (user.role === 'staff') navigate('/pos');
+      else if (user.role === 'barista') navigate('/kds');
+      else if (user.role === 'manager') navigate('/admin');
+      else navigate('/menu');
+    } catch (loginError: any) {
+      setError(loginError.message || 'Không thể đăng nhập. Vui lòng kiểm tra lại tài khoản và mật khẩu.');
     } finally {
       setLoading(false);
     }
@@ -41,14 +50,14 @@ export const LoginPage: React.FC = () => {
     <div className="min-h-[calc(100dvh-8rem)] flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-3xl border border-[#E5DFCE] shadow-xl p-6 sm:p-8 space-y-6">
         <div className="text-center space-y-1.5">
-          <div className="w-10 h-10 rounded-xl bg-[#2D6A4F] text-white mx-auto flex items-center justify-center font-bold font-['Outfit']">
+          <div className="w-10 h-10 rounded-xl bg-[#2D6A4F] text-white mx-auto flex items-center justify-center font-bold font-sans">
             FL
           </div>
-          <h1 className="font-['Outfit'] font-bold text-2xl text-[#1B4332]">
+          <h1 className="font-sans font-bold text-2xl text-[#1B4332]">
             Đăng nhập hệ thống FreshLeaf
           </h1>
           <p className="text-xs text-[#5D7067]">
-            Chọn vai trò truy cập nhanh để trải nghiệm các phân hệ của quán.
+            Chọn vai trò để điền nhanh tài khoản demo, sau đó nhập mật khẩu để đăng nhập.
           </p>
         </div>
 
@@ -114,13 +123,15 @@ export const LoginPage: React.FC = () => {
         {/* Biểu mẫu đăng nhập thủ công */}
         <form onSubmit={handleManualLogin} className="space-y-4 text-xs">
           <div>
-            <label className="block font-bold text-[#1B4332] mb-1">Địa chỉ Email</label>
+            <label className="block font-bold text-[#1B4332] mb-1">Username hoặc email</label>
             <input
-              type="email"
+              name="identifier"
+              type="text"
               required
+              autoComplete="username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="ví dụ: nguyenvanan@gmail.com"
+              placeholder="ví dụ: demo_barista"
               className="w-full px-3 py-2 rounded-xl border border-[#E5DFCE] bg-white text-[#1B4332]"
             />
           </div>
@@ -128,7 +139,11 @@ export const LoginPage: React.FC = () => {
           <div>
             <label className="block font-bold text-[#1B4332] mb-1">Mật khẩu</label>
             <input
+              id="login-password"
+              name="password"
               type="password"
+              required
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
@@ -136,7 +151,14 @@ export const LoginPage: React.FC = () => {
             />
           </div>
 
+          {error && (
+            <p className={`rounded-lg px-3 py-2 text-xs ${error.startsWith('Nhập mật khẩu') ? 'bg-[#F2F8F5] text-[#1B4332]' : 'bg-[#FFF1F2] text-[#9F1239]'}`} role="status">
+              {error}
+            </p>
+          )}
+
           <button
+            id="login-submit"
             type="submit"
             disabled={loading}
             className="w-full py-2.5 bg-[#2D6A4F] hover:bg-[#1B4332] text-white font-semibold rounded-xl text-xs transition-colors shadow-sm disabled:opacity-50"

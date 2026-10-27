@@ -49,7 +49,7 @@ export const KdsPage: React.FC = () => {
   const displayedOrders = kdsOrders.length > 0 ? kdsOrders : orders.filter((o) => o.status !== 'cancelled');
 
   const filteredOrders = displayedOrders.filter((o) => {
-    if (activeTab === 'all') return o.status !== 'cancelled';
+    if (activeTab === 'all') return o.status === 'waiting' || o.status === 'pending' || o.status === 'preparing';
     if (activeTab === 'waiting') return o.status === 'waiting' || o.status === 'pending';
     return o.status === activeTab;
   });
@@ -91,88 +91,93 @@ export const KdsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[calc(100dvh-4rem)] bg-[#101A15] text-[#E2EBE5] p-4 sm:p-6 space-y-6">
-      {/* Thanh tiêu đề KDS */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#21352A]">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#2D6A4F] flex items-center justify-center text-white shadow-md">
-            <ChefHat className="w-5 h-5" />
-          </div>
+    <div className="min-h-[calc(100dvh-4rem)] bg-[#101A15] text-[#E2EBE5] p-4 sm:p-6 space-y-5" data-ui>
+      {/* Tiêu đề và công cụ vận hành */}
+      <section className="border-b border-[#21352A]">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-4">
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="font-['Outfit'] font-bold text-xl sm:text-2xl text-white tracking-tight">
-                Màn hình pha chế (KDS)
-              </h1>
-              <span className="px-2 py-0.5 rounded-full bg-[#2D6A4F]/40 border border-[#40916C]/60 text-xs font-mono text-[#95D5B2]">
-                QUẦY BARISTA
-              </span>
-            </div>
-            <p className="text-xs text-[#889C92]">
-              Điều phối pha chế trực tiếp &bull; Tự động đồng bộ với Thu ngân và Khách hàng
+            <h1 className="font-sans font-semibold text-xl sm:text-2xl text-white tracking-tight">
+              Màn hình pha chế
+            </h1>
+            <p className="mt-1 text-sm text-[#A8B8AF]">
+              Quầy barista · Đồng bộ đơn từ thu ngân và khách hàng
             </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchKdsOrders}
+              disabled={isRefreshing}
+              className="h-9 px-3 rounded-lg border border-[#31483B] text-sm font-medium text-[#C6D3CC] hover:border-[#557061] hover:text-white disabled:opacity-50 transition-colors flex items-center gap-2"
+              title="Đồng bộ danh sách đơn"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Đồng bộ</span>
+            </button>
+
+            <button
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              className="w-9 h-9 rounded-lg border border-[#31483B] text-[#A8B8AF] hover:border-[#557061] hover:text-white transition-colors grid place-items-center"
+              title={soundEnabled ? 'Chuông báo đơn mới: Bật' : 'Chuông báo: Tắt'}
+              aria-pressed={soundEnabled}
+            >
+              {soundEnabled ? <Volume2 className="w-4 h-4 text-[#6EC99A]" /> : <VolumeX className="w-4 h-4" />}
+            </button>
           </div>
         </div>
 
-        {/* Bộ lọc trạng thái & Chuông báo */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          <div className="flex items-center gap-1 p-1 bg-[#182820] rounded-xl border border-[#21352A]">
+        {/* Một tầng lọc duy nhất cho hàng đợi KDS */}
+        <div className="flex items-center gap-5 overflow-x-auto" role="tablist" aria-label="Lọc trạng thái đơn pha chế">
             <button
               onClick={() => setActiveTab('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              role="tab"
+              aria-selected={activeTab === 'all'}
+              className={`h-11 shrink-0 border-b-2 text-sm font-medium transition-colors ${
                 activeTab === 'all'
-                  ? 'bg-[#2D6A4F] text-white shadow-xs'
-                  : 'text-[#889C92] hover:text-white'
+                  ? 'border-[#6EC99A] text-white'
+                  : 'border-transparent text-[#91A39A] hover:text-[#DCE6E0]'
               }`}
             >
-              Tất cả ({waitingCount + preparingCount})
+              Đang xử lý <span className="ml-1.5 tabular-nums text-xs">{waitingCount + preparingCount}</span>
             </button>
             <button
               onClick={() => setActiveTab('waiting')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              role="tab"
+              aria-selected={activeTab === 'waiting'}
+              className={`h-11 shrink-0 border-b-2 text-sm font-medium transition-colors ${
                 activeTab === 'waiting'
-                  ? 'bg-[#EA580C] text-white shadow-xs'
-                  : 'text-[#889C92] hover:text-white'
+                  ? 'border-[#F59E5B] text-white'
+                  : 'border-transparent text-[#91A39A] hover:text-[#DCE6E0]'
               }`}
             >
-              <span>Đơn mới</span>
-              <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px] tabular-nums">
-                {waitingCount}
-              </span>
+              Chờ pha <span className="ml-1.5 tabular-nums text-xs">{waitingCount}</span>
             </button>
             <button
               onClick={() => setActiveTab('preparing')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              role="tab"
+              aria-selected={activeTab === 'preparing'}
+              className={`h-11 shrink-0 border-b-2 text-sm font-medium transition-colors ${
                 activeTab === 'preparing'
-                  ? 'bg-[#2563EB] text-white shadow-xs'
-                  : 'text-[#889C92] hover:text-white'
+                  ? 'border-[#72A7F7] text-white'
+                  : 'border-transparent text-[#91A39A] hover:text-[#DCE6E0]'
               }`}
             >
-              <span>Đang pha</span>
-              <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px] tabular-nums">
-                {preparingCount}
-              </span>
+              Đang pha <span className="ml-1.5 tabular-nums text-xs">{preparingCount}</span>
             </button>
             <button
               onClick={() => setActiveTab('completed')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              role="tab"
+              aria-selected={activeTab === 'completed'}
+              className={`h-11 shrink-0 border-b-2 text-sm font-medium transition-colors ${
                 activeTab === 'completed'
-                  ? 'bg-[#15803D] text-white shadow-xs'
-                  : 'text-[#889C92] hover:text-white'
+                  ? 'border-[#6EC99A] text-white'
+                  : 'border-transparent text-[#91A39A] hover:text-[#DCE6E0]'
               }`}
             >
-              Hoàn thành ({completedCount})
+              Hoàn thành <span className="ml-1.5 tabular-nums text-xs">{completedCount}</span>
             </button>
-          </div>
-
-          <button
-            onClick={() => setSoundEnabled(!soundEnabled)}
-            className="p-2 rounded-xl bg-[#182820] border border-[#21352A] text-[#889C92] hover:text-white transition-colors"
-            title={soundEnabled ? 'Chuông báo đơn mới: Bật' : 'Chuông báo: Tắt'}
-          >
-            {soundEnabled ? <Volume2 className="w-4 h-4 text-[#40916C]" /> : <VolumeX className="w-4 h-4" />}
-          </button>
         </div>
-      </div>
+      </section>
 
       {/* Lưới các phiếu đơn pha chế */}
       {filteredOrders.length === 0 ? (
@@ -199,14 +204,14 @@ export const KdsPage: React.FC = () => {
             if (order.status === 'waiting' || order.status === 'pending') {
               borderClass = isUrgent ? 'border-[#EA580C] ring-1 ring-[#EA580C]' : 'border-[#EA580C]/60';
               statusBadge = (
-                <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-[#EA580C] text-white tracking-wider animate-pulse">
+                <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-[#EA580C] text-white tracking-wider">
                   Đơn mới ({elapsed} phút)
                 </span>
               );
             } else if (order.status === 'preparing') {
-              borderClass = 'border-[#2563EB] ring-1 ring-[#2563EB]/40';
+              borderClass = 'border-[#3B78A8] ring-1 ring-[#3B78A8]/40';
               statusBadge = (
-                <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-[#2563EB] text-white tracking-wider">
+                <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-[#3B78A8] text-white tracking-wider">
                   Đang pha ({elapsed} phút)
                 </span>
               );
@@ -222,7 +227,7 @@ export const KdsPage: React.FC = () => {
             return (
               <div
                 key={order.id}
-                className={`bg-[#16251E] rounded-2xl border ${borderClass} p-4 flex flex-col justify-between space-y-4 shadow-lg transition-all`}
+                className={`bg-[#16251E] rounded-2xl border ${borderClass} p-4 flex flex-col justify-between space-y-4 transition-colors`}
               >
                 {/* Đầu phiếu đơn */}
                 <div className="space-y-2">
@@ -240,7 +245,7 @@ export const KdsPage: React.FC = () => {
 
                   <div className="flex items-center justify-between text-xs text-[#889C92] pt-1 border-t border-[#21352A]">
                     <span className="font-semibold text-[#E2EBE5]">
-                      {order.customerName} {order.tableNumber ? `&bull; ${order.tableNumber}` : ''}
+                      {order.customerName} {order.tableNumber ? `• ${order.tableNumber}` : ''}
                     </span>
                     <span className="tabular-nums flex items-center gap-1">
                       <Clock className="w-3 h-3 text-[#40916C]" />
@@ -282,7 +287,7 @@ export const KdsPage: React.FC = () => {
                         {item.boosters.map((b) => (
                           <span
                             key={b.id}
-                            className="px-1.5 py-0.5 rounded bg-[#F59E0B]/20 text-[#FDE047] font-semibold"
+                            className="px-1.5 py-0.5 rounded bg-[#D79A38]/20 text-[#F5D88A] font-semibold"
                           >
                             +{b.name}
                           </span>
@@ -311,7 +316,7 @@ export const KdsPage: React.FC = () => {
                   {(order.status === 'waiting' || order.status === 'pending') && (
                     <button
                       onClick={() => handleAdvanceStatus(order)}
-                      className="flex-1 py-2.5 px-3 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-md"
+                      className="flex-1 py-2.5 px-3 rounded-xl bg-[#3B78A8] hover:bg-[#2F648F] text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
                     >
                       <span>Bắt đầu pha</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -321,7 +326,7 @@ export const KdsPage: React.FC = () => {
                   {order.status === 'preparing' && (
                     <button
                       onClick={() => handleAdvanceStatus(order)}
-                      className="flex-1 py-2.5 px-3 rounded-xl bg-[#15803D] hover:bg-[#166534] text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-md"
+                      className="flex-1 py-2.5 px-3 rounded-xl bg-[#15803D] hover:bg-[#166534] text-white text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
                     >
                       <Check className="w-4 h-4 stroke-[3]" />
                       <span>Hoàn thành món</span>

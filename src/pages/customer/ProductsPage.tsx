@@ -7,6 +7,7 @@ import { Drink } from '../../types';
 import { formatVND } from '../../utils/formatters';
 import { ProductService } from '../../services/productService';
 import { CategoryService, CategoryItem } from '../../services/categoryService';
+import { Pagination } from '../../components/common/Pagination';
 
 export const ProductsPage: React.FC = () => {
   const { products: storeProducts, openDrinkModal, addToCart } = useStore();
@@ -59,6 +60,8 @@ export const ProductsPage: React.FC = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState<string>('all');
+  const [page, setPage] = useState(1);
+  const pageSize = 8;
 
   // Category mapping:
   // categoryId = CAT01 → Sinh tố
@@ -146,6 +149,8 @@ export const ProductsPage: React.FC = () => {
 
     return list;
   }, [displayProducts, currentCat, searchQuery, sortOption]);
+  useEffect(() => setPage(1), [currentCat, searchQuery, sortOption]);
+  const pagedDrinks = filteredDrinks.slice((page - 1) * pageSize, page * pageSize);
 
   const handleQuickAdd = (drink: Drink, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -169,7 +174,7 @@ export const ProductsPage: React.FC = () => {
           <span className="text-xs font-semibold uppercase tracking-wider text-[#6CAE8F]">
             Thức uống tươi nguyên chất mỗi ngày
           </span>
-          <h1 className="font-['Outfit'] text-3xl sm:text-4xl font-extrabold text-[#1B4332] tracking-tight mt-1">
+          <h1 className="font-sans text-3xl sm:text-4xl font-extrabold text-[#1B4332] tracking-tight mt-1">
             Thực đơn sinh tố &amp; nước ép
           </h1>
           <p className="text-xs sm:text-sm text-[#5D7067] mt-1 max-w-xl">
@@ -279,7 +284,7 @@ export const ProductsPage: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredDrinks.map((drink) => (
+          {pagedDrinks.map((drink) => (
             <div
               key={drink.id}
               onClick={() => openDrinkModal(drink)}
@@ -309,12 +314,12 @@ export const ProductsPage: React.FC = () => {
                     <span className="text-[10px] uppercase font-semibold tracking-wider text-[#6CAE8F]">
                       {drink.category === 'smoothie' ? 'Sinh tố' : drink.category === 'fresh_juice' ? 'Nước ép' : 'Combo'}
                     </span>
-                    <span className="text-sm font-bold text-[#EA580C] font-['Outfit'] tabular-nums">
+                    <span className="text-sm font-bold text-[#EA580C] font-sans tabular-nums">
                       {formatVND(drink.basePrice)}
                     </span>
                   </div>
 
-                  <h3 className="font-['Outfit'] font-bold text-sm text-[#1B4332] group-hover:text-[#2D6A4F] transition-colors">
+                  <h3 className="font-sans font-bold text-sm text-[#1B4332] group-hover:text-[#2D6A4F] transition-colors">
                     {drink.name}
                   </h3>
 
@@ -357,6 +362,7 @@ export const ProductsPage: React.FC = () => {
           ))}
         </div>
       )}
+      <Pagination page={page} pageSize={pageSize} totalItems={filteredDrinks.length} onPageChange={setPage} />
     </div>
   );
 };

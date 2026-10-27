@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { Review } from '../models/Review';
 import { isDbConnected } from '../config/db';
+import { authenticate, authorize } from '../middleware/auth';
 
 const router = Router();
 
@@ -89,11 +90,11 @@ router.get('/:productId/reviews', handleGetProductReviews);
 router.get('/products/:productId/reviews', handleGetProductReviews);
 
 // POST /api/products/:productId/reviews
-router.post('/:productId/reviews', handlePostProductReview);
-router.post('/products/:productId/reviews', handlePostProductReview);
+router.post('/:productId/reviews', authenticate, handlePostProductReview);
+router.post('/products/:productId/reviews', authenticate, handlePostProductReview);
 
 // GET /api/reviews
-router.get('/', async (req: Request, res: Response): Promise<void> => {
+router.get('/', authenticate, authorize('MANAGER'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { productId } = req.query;
     if (!isDbConnected()) {
@@ -112,7 +113,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 });
 
 // PUT /api/reviews/:id
-router.put('/:id', async (req: Request, res: Response): Promise<void> => {
+router.put('/:id', authenticate, authorize('MANAGER'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -143,7 +144,7 @@ router.put('/:id', async (req: Request, res: Response): Promise<void> => {
 });
 
 // DELETE /api/reviews/:id
-router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
+router.delete('/:id', authenticate, authorize('MANAGER'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
 

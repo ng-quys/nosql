@@ -2,8 +2,10 @@ import { Router, Request, Response } from 'express';
 import { Order } from '../models/Order';
 import { Inventory } from '../models/Inventory';
 import { isDbConnected } from '../config/db';
+import { authenticate, authorize } from '../middleware/auth';
 
 const router = Router();
+router.use(authenticate, authorize('MANAGER'));
 
 // GET /api/reports/revenue
 // Support: daily, weekly, monthly, custom date range (startDate, endDate)

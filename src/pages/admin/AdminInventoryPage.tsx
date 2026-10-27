@@ -4,6 +4,7 @@ import { useStore } from '../../context/StoreContext';
 import { Ingredient } from '../../types';
 import { formatVND } from '../../utils/formatters';
 import { InventoryService } from '../../services/inventoryService';
+import { Pagination } from '../../components/common/Pagination';
 
 export const AdminInventoryPage: React.FC = () => {
   const { ingredients: storeIngredients, restockIngredient: storeRestock } = useStore();
@@ -14,6 +15,8 @@ export const AdminInventoryPage: React.FC = () => {
 
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState<string>('all');
+  const [page, setPage] = useState(1);
+  const pageSize = 12;
   const [restockModalItem, setRestockModalItem] = useState<Ingredient | null>(null);
   const [restockAmount, setRestockAmount] = useState<number>(10);
 
@@ -54,6 +57,8 @@ export const AdminInventoryPage: React.FC = () => {
     }
     return true;
   });
+  useEffect(() => setPage(1), [search, filterCat]);
+  const pagedIngredients = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   const handleRestockSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,7 +171,7 @@ export const AdminInventoryPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F2EDE2]">
-              {filtered.map((item) => {
+              {pagedIngredients.map((item) => {
                 const ratio = Math.min(100, Math.round((item.currentStock / (item.minThreshold * 2)) * 100));
 
                 let barColor = 'bg-[#2D6A4F]';
@@ -257,6 +262,7 @@ export const AdminInventoryPage: React.FC = () => {
             </tbody>
           </table>
         </div>
+        <div className="px-4 pb-4"><Pagination page={page} pageSize={pageSize} totalItems={filtered.length} onPageChange={setPage} /></div>
       </div>
 
       {/* Modal Nhập hàng theo chuyến */}
@@ -264,7 +270,7 @@ export const AdminInventoryPage: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="w-full max-w-sm bg-white rounded-2xl border border-[#E5DFCE] shadow-2xl p-6 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-[#F2EDE2]">
-              <h3 className="font-['Outfit'] font-bold text-base text-[#1B4332]">
+              <h3 className="font-sans font-bold text-base text-[#1B4332]">
                 Ghi nhận đợt giao nguyên liệu
               </h3>
               <button

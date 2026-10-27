@@ -39,7 +39,7 @@ router.get('/', async (_req: Request, res: Response): Promise<void> => {
 });
 
 // POST /api/categories
-router.post('/', async (req: Request, res: Response): Promise<void> => {
+router.post('/', authenticate, authorize('MANAGER'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, code, categoryId, description, displayOrder } = req.body;
     if (!name) {
@@ -69,7 +69,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 });
 
 // PUT /api/categories/:id
-router.put('/:id', async (req: Request, res: Response): Promise<void> => {
+router.put('/:id', authenticate, authorize('MANAGER'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -95,7 +95,7 @@ router.put('/:id', async (req: Request, res: Response): Promise<void> => {
 });
 
 // DELETE /api/categories/:id
-router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
+router.delete('/:id', authenticate, authorize('MANAGER'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const deleted = await Category.findOneAndDelete({

@@ -69,7 +69,7 @@ export const ReceiptModal: React.FC = () => {
         <div className="pt-4 font-mono text-xs space-y-3">
           {/* Thông tin quán */}
           <div className="text-center space-y-1">
-            <h3 className="font-['Outfit'] font-bold text-base tracking-tight text-[#1B4332]">
+            <h3 className="font-sans font-bold text-base tracking-tight text-[#1B4332]">
               FRESHLEAF JUICE
             </h3>
             <p className="text-[11px] text-[#5D7067]">Cửa hàng sinh tố &amp; nước ép tươi</p>

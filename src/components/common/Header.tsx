@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   ShoppingBag,
-  User as UserIcon,
   ChefHat,
   MonitorCheck,
   LayoutDashboard,
-  ChevronDown,
   Bell,
   X,
   CheckCircle2,
@@ -20,7 +18,6 @@ export const Header: React.FC = () => {
   const {
     currentUser,
     role,
-    switchRole,
     cartCount,
     setIsCartDrawerOpen,
     notifications,
@@ -29,9 +26,17 @@ export const Header: React.FC = () => {
   } = useStore();
 
   const location = useLocation();
-  const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileMenuOpen(false); setNotifOpen(false);
+    if (location.hash) requestAnimationFrame(() => document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));
+  }, [location.pathname, location.hash]);
+  useEffect(() => {
+    const close = (event: KeyboardEvent) => { if (event.key === 'Escape') { setMobileMenuOpen(false); setNotifOpen(false); } };
+    document.addEventListener('keydown', close); return () => document.removeEventListener('keydown', close);
+  }, []);
 
   const unreadNotifs = notifications.filter((n) => !n.read).length;
 
@@ -57,8 +62,8 @@ export const Header: React.FC = () => {
     manager: {
       label: 'Quản lý cửa hàng',
       short: 'Quản lý',
-      icon: <LayoutDashboard className="w-4 h-4 text-purple-600" />,
-      color: 'bg-purple-50 text-purple-800 border-purple-200',
+      icon: <LayoutDashboard className="w-4 h-4 text-[#4C6B5D]" />,
+      color: 'bg-[#EDF3EF] text-[#284536] border-[#C9D8D0]',
     },
   };
 
@@ -70,23 +75,18 @@ export const Header: React.FC = () => {
         return [
           { label: 'Trang chủ', path: '/' },
           { label: 'Thực đơn', path: '/menu' },
-          { label: 'Khuyến mãi', path: '/#khuyen-mai' },
+          { label: 'Khuyến mãi', path: '/promotions' },
           { label: 'Theo dõi đơn hàng', path: '/track' },
         ];
       case 'staff':
         return [
           { label: 'Bán hàng', path: '/pos' },
-          { label: 'Đơn hàng', path: '/admin/orders' },
-          { label: 'Khách hàng', path: '/track' },
-          { label: 'Thanh toán', path: '/pos' },
+          { label: 'Đơn hàng', path: '/staff/orders' },
         ];
       case 'barista':
-        return [
-          { label: 'Màn hình pha chế', path: '/kds' },
-          { label: 'Đơn đang pha', path: '/kds' },
-          { label: 'Hoàn thành', path: '/kds' },
-          { label: 'Tình trạng nguyên liệu', path: '/admin/inventory' },
-        ];
+        // KDS là một màn hình vận hành duy nhất. Các trạng thái đơn được lọc
+        // ngay trong toolbar của KDS, không lặp lại thành điều hướng toàn cục.
+        return [];
       case 'manager':
         return [
           { label: 'Tổng quan', path: '/admin' },
@@ -106,25 +106,19 @@ export const Header: React.FC = () => {
 
   const navLinks = getNavLinks(role);
 
-  const handleRoleSelect = async (newRole: UserRole) => {
-    setRoleMenuOpen(false);
-    setMobileMenuOpen(false);
-    await switchRole(newRole);
-  };
-
   return (
-    <header className="sticky top-0 z-40 bg-[#FCFBF7]/95 backdrop-blur-md border-b border-[#EAE5D9]">
+    <header className={`${role === 'customer' ? 'fresh-header' : ''} sticky top-0 z-40 bg-[#FCFBF7]/95 backdrop-blur-md border-b border-[#EAE5D9]`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         {/* Zone 1: Brand Wordmark */}
         <div className="flex items-center gap-3">
           {/* Mobile menu trigger */}
-          <button
+          {navLinks.length > 0 && <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="lg:hidden p-2 text-[#5D7067] hover:text-[#1B4332] hover:bg-[#F2EDE2]/60 rounded-lg transition-colors"
-            aria-label="Mở thanh điều hướng"
+            aria-label="Mở thanh điều hướng" aria-expanded={mobileMenuOpen}
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+          </button>}
 
           <Link
             to="/"
@@ -135,7 +129,7 @@ export const Header: React.FC = () => {
                 <path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 008 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z" />
               </svg>
             </span>
-            <span className="font-['Be_Vietnam_Pro'] font-bold text-xl tracking-tight text-[#1B4332]">
+            <span className="font-sans font-bold text-xl tracking-tight text-[#1B4332]">
               FreshLeaf<span className="text-[#EA580C]">.</span>
             </span>
           </Link>
@@ -166,57 +160,16 @@ export const Header: React.FC = () => {
           })}
         </nav>
 
-        {/* Zone 3: Actions + Role Switcher */}
+        {/* Zone 3: Account status and actions */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Quick Role Switcher (Cho đồ án / demo chấm điểm) */}
-          <div className="relative">
-            <button
-              onClick={() => setRoleMenuOpen(!roleMenuOpen)}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all ${
-                roleLabels[role].color
-              }`}
-              title="Đổi vai trò người dùng hệ thống"
-            >
-              {roleLabels[role].icon}
-              <span className="hidden sm:inline font-semibold">{roleLabels[role].short}</span>
-              <ChevronDown className="w-3 h-3 opacity-70" />
-            </button>
-
-            {roleMenuOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-20"
-                  onClick={() => setRoleMenuOpen(false)}
-                />
-                <div className="absolute right-0 mt-2 w-64 bg-white border border-[#E5DFCE] rounded-xl shadow-xl p-1.5 z-30 divide-y divide-[#F2EDE2] animate-in fade-in-50 zoom-in-95 duration-150">
-                  <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-[#889C92]">
-                    Chuyển vai trò hệ thống
-                  </div>
-                  <div className="py-1 space-y-0.5">
-                    {(['customer', 'staff', 'barista', 'manager'] as UserRole[]).map((r) => (
-                      <button
-                        key={r}
-                        onClick={() => handleRoleSelect(r)}
-                        className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded-lg text-left transition-colors ${
-                          role === r
-                            ? 'bg-[#F2F8F5] text-[#1B4332] font-semibold'
-                            : 'text-[#2D3F37] hover:bg-[#FAF8F2]'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          {roleLabels[r].icon}
-                          <div>
-                            <p className="font-semibold">{roleLabels[r].label}</p>
-                          </div>
-                        </div>
-                        {role === r && <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
+          <Link
+            to={currentUser ? '/profile' : '/login'}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-colors ${roleLabels[role].color}`}
+            title={currentUser ? `Đăng nhập với quyền ${roleLabels[role].label}` : 'Đăng nhập'}
+          >
+            {roleLabels[role].icon}
+            <span className="hidden sm:inline font-semibold">{currentUser ? roleLabels[role].short : 'Đăng nhập'}</span>
+          </Link>
 
           {/* Notifications bell */}
           <div className="relative">
@@ -226,7 +179,7 @@ export const Header: React.FC = () => {
                 if (!notifOpen) markNotificationsAsRead();
               }}
               className="p-2 text-[#5D7067] hover:text-[#1B4332] hover:bg-[#F2EDE2]/60 rounded-lg transition-colors relative"
-              aria-label="Thông báo hệ thống"
+              aria-label="Thông báo hệ thống" aria-expanded={notifOpen}
             >
               <Bell className="w-4 h-4" />
               {unreadNotifs > 0 && (
@@ -284,8 +237,8 @@ export const Header: React.FC = () => {
             )}
           </div>
 
-          {/* Cart Drawer Trigger - Chỉ cần thiết nhất cho Khách hàng & có thể dùng cho mọi vai trò */}
-          <button
+          {/* Giỏ hàng chỉ dành cho khách hàng */}
+          {role === 'customer' && <button
             onClick={() => setIsCartDrawerOpen(true)}
             className="flex items-center gap-2 px-3.5 py-1.5 bg-[#1B4332] text-white text-xs font-semibold rounded-lg hover:bg-[#143427] active:scale-95 transition-all shadow-xs"
             aria-label="Xem giỏ hàng"
@@ -295,23 +248,21 @@ export const Header: React.FC = () => {
             <span className="w-4 h-4 rounded-full bg-[#EA580C] text-white flex items-center justify-center text-[10px] font-bold tabular-nums">
               {cartCount}
             </span>
-          </button>
+          </button>}
 
-          {/* User profile / login */}
-          <Link
-            to={currentUser ? '/profile' : '/login'}
-            className="p-1.5 text-[#2D3F37] hover:bg-[#F2EDE2]/60 rounded-lg transition-colors flex items-center gap-1 text-xs"
-            title={currentUser ? `Tài khoản: ${currentUser.name}` : 'Đăng nhập'}
-            aria-label="Trang tài khoản cá nhân"
-          >
-            {currentUser?.avatar ? (
+          {/* Avatar cá nhân chỉ dành cho giao diện khách hàng */}
+          {role === 'customer' && currentUser && (
+            <Link
+              to="/profile"
+              className="p-1.5 text-[#2D3F37] hover:bg-[#F2EDE2]/60 rounded-lg transition-colors flex items-center gap-1 text-xs"
+              title={`Tài khoản: ${currentUser.name}`}
+              aria-label="Trang tài khoản cá nhân"
+            >
               <span className="w-7 h-7 rounded-full bg-[#E2F1E9] text-[#1B4332] flex items-center justify-center text-xs font-bold border border-[#C5E3D3]">
-                {currentUser.avatar}
+                {currentUser.avatar || currentUser.name.slice(0, 2).toUpperCase()}
               </span>
-            ) : (
-              <UserIcon className="w-4 h-4 text-[#5D7067]" />
-            )}
-          </Link>
+            </Link>
+          )}
         </div>
       </div>
 

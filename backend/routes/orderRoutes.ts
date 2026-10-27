@@ -3,6 +3,9 @@ import { Order } from '../models/Order';
 import { Product } from '../models/Product';
 import { Customer } from '../models/Customer';
 import { isDbConnected } from '../config/db';
+import { Promotion } from '../models/Promotion';
+import { AuthRequest, authenticate, authorize, optionalAuthenticate } from '../middleware/auth';
+import { calculateItemPrice, calculatePromotionDiscount } from '../utils/orderPricing';
 
 const router = Router();
 
@@ -51,7 +54,7 @@ function formatOrder(doc: any) {
 
 // GET /api/orders
 // Filter by: status, customerId, phone, page, limit
-router.get('/', async (req: Request, res: Response): Promise<void> => {
+router.get('/', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { status, customerId, phone, page, limit = '100' } = req.query;
 
@@ -61,10 +64,15 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     }
 
     const query: any = {};
+    if (req.user?.role === 'CUSTOMER') query.customerId = req.user.userId;
+    else if (!['MANAGER', 'STAFF', 'BARISTA'].includes(req.user?.role || '')) {
+      res.status(403).json({ success: false, message: 'Bạn không có quyền xem danh sách đơn hàng' });
+      return;
+    }
     if (status && status !== 'all') {
       query.status = status;
     }
-    if (customerId) {
+    if (customerId && req.user?.role !== 'CUSTOMER') {
       query.customerId = customerId;
     }
     if (phone) {
@@ -96,7 +104,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 });
 
 // GET /api/orders/:id
-router.get('/:id', async (req: Request, res: Response): Promise<void> => {
+router.get('/:id', optionalAuthenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
 
@@ -115,6 +123,24 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
 
     if (!order) {
       res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' });
+      return;
+    }
+
+    const staffRoles = ['MANAGER', 'STAFF', 'BARISTA'];
+    if (!req.user) {
+      const suppliedPhone = String(req.query.phone || '').replace(/\D/g, '');
+      const orderPhone = String(order.customerPhone || '').replace(/\D/g, '');
+      if (!suppliedPhone || !orderPhone || suppliedPhone !== orderPhone) {
+        res.status(403).json({ success: false, message: 'Cần số điện thoại đặt hàng để xem đơn này' });
+        return;
+      }
+    }
+    if (req.user?.role === 'CUSTOMER' && String(order.customerId || '') !== req.user.userId) {
+      res.status(403).json({ success: false, message: 'Bạn không có quyền xem đơn hàng này' });
+      return;
+    }
+    if (req.user && req.user.role !== 'CUSTOMER' && !staffRoles.includes(req.user.role)) {
+      res.status(403).json({ success: false, message: 'Bạn không có quyền xem đơn hàng này' });
       return;
     }
 
@@ -137,7 +163,7 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
 // 6. Calculate total.
 // 7. Save the order.
 // 8. Return the saved order.
-router.post('/', async (req: Request, res: Response): Promise<void> => {
+router.post('/', optionalAuthenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const {
       customerId,
@@ -146,7 +172,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
       tableNumber = 1,
       orderType = 'dine_in',
       items,
-      discount = 0,
+      promotionCode,
       payment = 'cash',
       paymentMethod = 'cash',
       paymentStatus = 'paid',
@@ -170,9 +196,10 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     let verifiedCustomerName = customerName || 'Khách hàng';
     let verifiedCustomerPhone = customerPhone || '';
 
-    if (customerId) {
+    const effectiveCustomerId = req.user?.role === 'CUSTOMER' ? req.user.userId : customerId;
+    if (effectiveCustomerId) {
       const customer = await Customer.findOne({
-        $or: [{ _id: customerId }, { id: customerId }],
+        $or: [{ _id: effectiveCustomerId }, { id: effectiveCustomerId }],
       });
       if (customer) {
         verifiedCustomerName = customer.name;
@@ -201,7 +228,14 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
         return;
       }
 
-      const realUnitPrice = Math.round(Number(product.price ?? product.basePrice ?? 45000));
+      let priced;
+      try {
+        priced = calculateItemPrice(Number(product.price ?? product.basePrice ?? 45000), rawItem.size, rawItem.boosters || []);
+      } catch (error: any) {
+        res.status(400).json({ success: false, message: `${product.name}: ${error.message}` });
+        return;
+      }
+      const realUnitPrice = priced.unitPrice;
       const qty = Math.max(1, Math.floor(Number(rawItem.qty ?? rawItem.quantity ?? 1)));
       const itemAmount = realUnitPrice * qty;
       calculatedSubtotal += itemAmount;
@@ -215,15 +249,30 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
         amount: itemAmount,
         sugar: rawItem.sugar || '100%',
         ice: rawItem.ice || 'regular',
-        size: rawItem.size || 'medium',
-        boosters: rawItem.boosters || [],
+        size: priced.size,
+        boosters: priced.boosters,
         note: rawItem.note || rawItem.notes || '',
         notes: rawItem.notes || rawItem.note || '',
       });
     }
 
     // 4, 5, 6. Backend Subtotal, Discount & Total Calculation
-    const cleanDiscount = Math.max(0, Math.round(Number(discount || 0)));
+    let cleanDiscount = 0;
+    let appliedPromotionCode: string | undefined;
+    if (promotionCode) {
+      const code = String(promotionCode).trim().toUpperCase();
+      const promotion = await Promotion.findOne({ code });
+      if (!promotion || promotion.isActive === false || promotion.status === 'inactive') {
+        res.status(400).json({ success: false, message: 'Mã khuyến mãi không tồn tại hoặc đã ngừng áp dụng' });
+        return;
+      }
+      cleanDiscount = calculatePromotionDiscount(promotion, calculatedSubtotal);
+      if (cleanDiscount <= 0) {
+        res.status(400).json({ success: false, message: `Đơn hàng chưa đạt tối thiểu ${Number(promotion.minOrderAmount || 0).toLocaleString('vi-VN')} ₫` });
+        return;
+      }
+      appliedPromotionCode = code;
+    }
     const calculatedTotal = Math.max(0, calculatedSubtotal - cleanDiscount);
 
     // 7. Save Order to MongoDB with collision-resistant ID
@@ -247,7 +296,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     const newOrder = new Order({
       _id: orderId,
       orderNumber: orderId,
-      customerId: customerId || undefined,
+      customerId: effectiveCustomerId || undefined,
       customerName: verifiedCustomerName,
       customerPhone: verifiedCustomerPhone,
       tableNumber,
@@ -261,7 +310,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
       payment,
       paymentMethod,
       paymentStatus,
-      notes: notes || '',
+      notes: [notes, appliedPromotionCode ? `Mã khuyến mãi: ${appliedPromotionCode}` : ''].filter(Boolean).join(' | '),
       createdAt: new Date().toISOString(),
     });
 
@@ -292,7 +341,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 
 // PUT /api/orders/:id/status
 // Statuses: pending, preparing, completed, cancelled
-router.put('/:id/status', async (req: Request, res: Response): Promise<void> => {
+router.put('/:id/status', authenticate, authorize('MANAGER', 'STAFF', 'BARISTA'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const { status } = req.body;

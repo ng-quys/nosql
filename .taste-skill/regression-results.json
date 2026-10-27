@@ -1,0 +1,116 @@
+[
+  {
+    "name": "Responsive 375px",
+    "passed": true,
+    "detail": {
+      "viewport": 375,
+      "width": 375,
+      "cards": 4,
+      "broken": [],
+      "headline": 1.9994849306298006
+    }
+  },
+  {
+    "name": "Responsive 768px",
+    "passed": true,
+    "detail": {
+      "viewport": 768,
+      "width": 768,
+      "cards": 4,
+      "broken": [],
+      "headline": 1.9998916981726527
+    }
+  },
+  {
+    "name": "Responsive 1024px",
+    "passed": true,
+    "detail": {
+      "viewport": 1024,
+      "width": 1024,
+      "cards": 4,
+      "broken": [],
+      "headline": 1.9996753637341487
+    }
+  },
+  {
+    "name": "Responsive 1440px",
+    "passed": true,
+    "detail": {
+      "viewport": 1440,
+      "width": 1440,
+      "cards": 4,
+      "broken": [],
+      "headline": 1.9996803069053708
+    }
+  },
+  {
+    "name": "Hero flavor selection",
+    "passed": true,
+    "detail": "Sinh tố xoài cát Chu"
+  },
+  {
+    "name": "Category filter",
+    "passed": true
+  },
+  {
+    "name": "Product customizer",
+    "passed": true
+  },
+  {
+    "name": "Customized quantity updates cart",
+    "passed": true
+  },
+  {
+    "name": "Cart opens with items",
+    "passed": true
+  },
+  {
+    "name": "Notifications open",
+    "passed": true
+  },
+  {
+    "name": "Escape closes popover",
+    "passed": true
+  },
+  {
+    "name": "Role menu preserved",
+    "passed": true
+  },
+  {
+    "name": "Mobile navigation",
+    "passed": true
+  },
+  {
+    "name": "Promotion anchor",
+    "passed": true
+  },
+  {
+    "name": "Menu route",
+    "passed": true
+  },
+  {
+    "name": "Tracking route",
+    "passed": true
+  },
+  {
+    "name": "Login route",
+    "passed": true
+  },
+  {
+    "name": "No unhandled browser exceptions",
+    "passed": true,
+    "detail": []
+  },
+  {
+    "name": "Product API failure UI",
+    "passed": true
+  },
+  {
+    "name": "Product API retry recovery",
+    "passed": true
+  },
+  {
+    "name": "Reduced motion",
+    "passed": true
+  }
+]

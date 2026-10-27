@@ -3,6 +3,8 @@ import { Product } from '../models/Product';
 import { isDbConnected } from '../config/db';
 import { authenticate, authorize } from '../middleware/auth';
 import { handleGetProductReviews, handlePostProductReview } from './reviewRoutes';
+import { randomUUID } from 'crypto';
+import { parseProductCsv, productsToCsv } from '../utils/productCsv';
 
 const router = Router();
 
@@ -142,10 +144,51 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 });
 
 // GET /api/products/:productId/reviews
+router.get('/export/csv', authenticate, authorize('MANAGER'), async (_req: Request, res: Response): Promise<void> => {
+  const products = await Product.find().sort({ name: 1 }).lean();
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="freshleaf-products-${new Date().toISOString().slice(0, 10)}.csv"`);
+  res.send(productsToCsv(products));
+});
+
+router.post('/import/preview', authenticate, authorize('MANAGER'), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const rows = parseProductCsv(req.body.csv);
+    const names = rows.map((row) => row.data.name).filter(Boolean);
+    const existing = await Product.find({ name: { $in: names } }).select('name').lean();
+    const duplicates = new Set(existing.map((product: any) => String(product.name).toLowerCase()));
+    rows.forEach((row) => { if (duplicates.has(row.data.name.toLowerCase())) row.errors.push('Tên sản phẩm đã tồn tại'); });
+    res.json({ success: true, data: { rows, validCount: rows.filter((row) => row.errors.length === 0).length, errorCount: rows.filter((row) => row.errors.length > 0).length } });
+  } catch (error: any) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/import', authenticate, authorize('MANAGER'), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const rows = parseProductCsv(req.body.csv);
+    if (rows.some((row) => row.errors.length)) {
+      res.status(400).json({ success: false, message: 'CSV còn dòng không hợp lệ. Hãy chạy xem trước và sửa lỗi trước khi import' });
+      return;
+    }
+    const names = rows.map((row) => row.data.name);
+    const duplicate = await Product.findOne({ name: { $in: names } }).select('name').lean();
+    if (duplicate) {
+      res.status(409).json({ success: false, message: `Sản phẩm “${duplicate.name}” đã tồn tại; import không ghi đè dữ liệu cũ` });
+      return;
+    }
+    const docs = rows.map((row) => ({ _id: `P_${randomUUID()}`, ...row.data }));
+    await Product.insertMany(docs, { ordered: true });
+    res.status(201).json({ success: true, data: { imported: docs.length } });
+  } catch (error: any) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
 router.get('/:productId/reviews', handleGetProductReviews);
 
 // POST /api/products/:productId/reviews
-router.post('/:productId/reviews', handlePostProductReview);
+router.post('/:productId/reviews', authenticate, handlePostProductReview);
 
 // GET /api/products/:id
 router.get('/:id', async (req: Request, res: Response): Promise<void> => {
@@ -180,7 +223,7 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
 });
 
 // POST /api/products
-router.post('/', async (req: Request, res: Response): Promise<void> => {
+router.post('/', authenticate, authorize('MANAGER'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, categoryId, category, price, basePrice, status, isAvailable, ...rest } = req.body;
 
@@ -219,7 +262,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 });
 
 // PUT /api/products/:id
-router.put('/:id', async (req: Request, res: Response): Promise<void> => {
+router.put('/:id', authenticate, authorize('MANAGER'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const updates = { ...req.body };
@@ -261,7 +304,7 @@ router.put('/:id', async (req: Request, res: Response): Promise<void> => {
 });
 
 // DELETE /api/products/:id
-router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
+router.delete('/:id', authenticate, authorize('MANAGER'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const deleted = await Product.findOneAndDelete({ $or: [{ _id: id }, { id }] });

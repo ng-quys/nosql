@@ -27,7 +27,7 @@ function formatCustomer(doc: any) {
 
 // GET /api/customers
 // Search by: name, phone
-router.get('/', async (req: Request, res: Response): Promise<void> => {
+router.get('/', authenticate, authorize('MANAGER', 'STAFF'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { search, name, phone } = req.query;
 
@@ -70,7 +70,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 });
 
 // GET /api/customers/:id
-router.get('/:id', async (req: Request, res: Response): Promise<void> => {
+router.get('/:id', authenticate, authorize('MANAGER', 'STAFF'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
 
@@ -98,7 +98,7 @@ router.get('/:id', async (req: Request, res: Response): Promise<void> => {
 });
 
 // POST /api/customers
-router.post('/', async (req: Request, res: Response): Promise<void> => {
+router.post('/', authenticate, authorize('MANAGER', 'STAFF'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, phone, points, loyaltyPoints, email, address, tier } = req.body;
     if (!name || !phone) {
@@ -136,7 +136,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 });
 
 // PUT /api/customers/:id
-router.put('/:id', async (req: Request, res: Response): Promise<void> => {
+router.put('/:id', authenticate, authorize('MANAGER', 'STAFF'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const updates = req.body;

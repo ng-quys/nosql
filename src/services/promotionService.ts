@@ -14,38 +14,15 @@ export interface PromotionItem {
 
 export class PromotionService {
   static async getPromotions(): Promise<PromotionItem[]> {
-    try {
-      const response = await ApiService.get<PromotionItem[]>('/promotions');
-      if (response && response.data && Array.isArray(response.data)) {
-        return response.data;
-      }
-    } catch {
-      // fallback
+    const response = await ApiService.get<PromotionItem[]>('/promotions');
+    if (response && response.data && Array.isArray(response.data)) {
+      return response.data;
     }
+    return [];
+  }
 
-    return [
-      {
-        id: 'promo_1',
-        code: 'FRESH10',
-        title: 'Giảm 10.000 ₫ cho đơn từ 80.000 ₫',
-        description: 'Áp dụng cho mọi đồ uống sinh tố và nước ép nguyên chất',
-        discountType: 'fixed',
-        discountValue: 10000,
-        minOrderAmount: 80000,
-        isActive: true,
-      },
-      {
-        id: 'promo_2',
-        code: 'HEALTHY20',
-        title: 'Ưu đãi 15% cho thành viên mới',
-        description: 'Dành riêng cho khách hàng trải nghiệm lần đầu tại FreshLeaf',
-        discountType: 'percentage',
-        discountValue: 15,
-        minOrderAmount: 50000,
-        maxDiscount: 30000,
-        isActive: true,
-      },
-    ];
+  static async validate(code: string, subtotal: number): Promise<{ promotion: PromotionItem; discount: number }> {
+    return (await ApiService.post<{ promotion: PromotionItem; discount: number }>('/promotions/validate', { code, subtotal })).data;
   }
 
   static async createPromotion(promo: Omit<PromotionItem, 'id'>): Promise<PromotionItem> {

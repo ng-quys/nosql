@@ -6,3 +6,14 @@ coverage/
 *.log
 .env*
 !.env.example
+# FreshLeaf database tooling
+/freshleaf-os/database-tools/backups/*
+!/freshleaf-os/database-tools/backups/.gitkeep
+/freshleaf-os/database-tools/.locks/
+/freshleaf-os/database-tools/*.local.*
+/freshleaf-os/database-tools/connection*.yml
+/freshleaf-os/database-tools/connection*.yaml
+/freshleaf-os/database-tools/tests/.tmp/
+/freshleaf-os/database-tools/*.pem
+/freshleaf-os/database-tools/*.pfx
+/freshleaf-os/database-tools/*.key

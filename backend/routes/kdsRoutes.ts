@@ -1,8 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { Order } from '../models/Order';
 import { isDbConnected } from '../config/db';
+import { authenticate, authorize } from '../middleware/auth';
 
 const router = Router();
+router.use(authenticate, authorize('MANAGER', 'BARISTA'));
 
 function formatKdsOrder(doc: any) {
   const o = doc.toObject ? doc.toObject({ virtuals: true }) : doc;

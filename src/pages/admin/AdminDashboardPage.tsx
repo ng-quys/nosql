@@ -121,7 +121,7 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="flex items-baseline justify-between">
-            <h3 className="font-['Outfit'] text-2xl font-bold text-[#1B4332] tabular-nums">
+            <h3 className="font-sans text-2xl font-bold text-[#1B4332] tabular-nums">
               {formatVND(totalRevenue)}
             </h3>
             <span className="text-xs font-semibold text-[#2D6A4F] flex items-center">
@@ -140,7 +140,7 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="flex items-baseline justify-between">
-            <h3 className="font-['Outfit'] text-2xl font-bold text-[#1B4332] tabular-nums">
+            <h3 className="font-sans text-2xl font-bold text-[#1B4332] tabular-nums">
               {formatNumber(totalOrdersCount)} Đơn
             </h3>
             <span className="text-xs text-[#5D7067]">
@@ -159,7 +159,7 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="flex items-baseline justify-between">
-            <h3 className="font-['Outfit'] text-2xl font-bold text-[#1B4332] tabular-nums">
+            <h3 className="font-sans text-2xl font-bold text-[#1B4332] tabular-nums">
               {formatVND(avgOrderValue)}
             </h3>
             <span className="text-xs font-semibold text-[#2D6A4F] flex items-center">
@@ -178,7 +178,7 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="flex items-baseline justify-between">
-            <h3 className="font-['Outfit'] text-2xl font-bold text-[#1B4332] tabular-nums">
+            <h3 className="font-sans text-2xl font-bold text-[#1B4332] tabular-nums">
               {alertIngredients.length} Cảnh báo
             </h3>
             <span className="text-xs font-bold text-[#EA580C]">
@@ -193,7 +193,7 @@ export const AdminDashboardPage: React.FC = () => {
       <section className="bg-white rounded-3xl border border-[#E5DFCE] p-6 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-[#F2EDE2]">
           <div>
-            <h3 className="font-['Outfit'] font-bold text-lg text-[#1B4332]">
+            <h3 className="font-sans font-bold text-lg text-[#1B4332]">
               Doanh thu theo khung giờ trong ngày
             </h3>
             <p className="text-xs text-[#5D7067]">
@@ -234,7 +234,7 @@ export const AdminDashboardPage: React.FC = () => {
         <div className="lg:col-span-7 bg-white rounded-3xl border border-[#E5DFCE] p-6 space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-[#F2EDE2]">
             <div>
-              <h3 className="font-['Outfit'] font-bold text-base text-[#1B4332]">
+              <h3 className="font-sans font-bold text-base text-[#1B4332]">
                 Sản phẩm bán chạy nhất
               </h3>
               <p className="text-xs text-[#5D7067]">Xếp hạng theo số lượng ly đã bán ra</p>
@@ -268,7 +268,7 @@ export const AdminDashboardPage: React.FC = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="font-bold text-[#1B4332] font-['Outfit'] text-sm tabular-nums">
+                    <span className="font-bold text-[#1B4332] font-sans text-sm tabular-nums">
                       {formatVND(item.revenue)}
                     </span>
                     <p className="text-[10px] text-[#40916C] font-medium">Doanh số cao</p>
@@ -283,7 +283,7 @@ export const AdminDashboardPage: React.FC = () => {
         <div className="lg:col-span-5 bg-white rounded-3xl border border-[#E5DFCE] p-6 space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-[#F2EDE2]">
             <div>
-              <h3 className="font-['Outfit'] font-bold text-base text-[#1B4332]">
+              <h3 className="font-sans font-bold text-base text-[#1B4332]">
                 Nguyên liệu sắp hết
               </h3>
               <p className="text-xs text-[#5D7067]">Trái cây &amp; nguyên liệu dưới mức an toàn</p>

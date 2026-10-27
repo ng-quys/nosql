@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { Promotion } from '../models/Promotion';
 import { isDbConnected } from '../config/db';
 import { authenticate, authorize } from '../middleware/auth';
+import { calculatePromotionDiscount } from '../utils/orderPricing';
 
 const router = Router();
 
@@ -55,8 +56,24 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+router.post('/validate', async (req: Request, res: Response): Promise<void> => {
+  const code = String(req.body.code || '').trim().toUpperCase();
+  const subtotal = Math.max(0, Math.round(Number(req.body.subtotal || 0)));
+  const promotion = await Promotion.findOne({ code });
+  if (!promotion || promotion.isActive === false || promotion.status === 'inactive') {
+    res.status(404).json({ success: false, message: 'Mã khuyến mãi không tồn tại hoặc đã hết hiệu lực' });
+    return;
+  }
+  const discount = calculatePromotionDiscount(promotion, subtotal);
+  if (discount <= 0) {
+    res.status(400).json({ success: false, message: `Đơn hàng tối thiểu ${Number(promotion.minOrderAmount || 0).toLocaleString('vi-VN')} ₫` });
+    return;
+  }
+  res.json({ success: true, data: { promotion: formatPromotion(promotion), discount } });
+});
+
 // POST /api/promotions
-router.post('/', async (req: Request, res: Response): Promise<void> => {
+router.post('/', authenticate, authorize('MANAGER'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { code, title, description, discount, discountValue, type, discountType, minOrderAmount } = req.body;
 
@@ -111,7 +128,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 });
 
 // PUT /api/promotions/:id
-router.put('/:id', async (req: Request, res: Response): Promise<void> => {
+router.put('/:id', authenticate, authorize('MANAGER'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const updates = { ...req.body };
@@ -153,7 +170,7 @@ router.put('/:id', async (req: Request, res: Response): Promise<void> => {
 });
 
 // DELETE /api/promotions/:id
-router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
+router.delete('/:id', authenticate, authorize('MANAGER'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const deleted = await Promotion.findOneAndDelete({

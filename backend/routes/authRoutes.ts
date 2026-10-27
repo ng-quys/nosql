@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { User } from '../models/User';
 import { isDbConnected } from '../config/db';
 import { generateToken, authenticate, AuthRequest } from '../middleware/auth';
+import { randomUUID } from 'crypto';
 
 const router = Router();
 
@@ -46,6 +47,11 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    if (user.isActive === false) {
+      res.status(403).json({ success: false, message: 'Tài khoản đã bị khóa. Vui lòng liên hệ quản lý' });
+      return;
+    }
+
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       res.status(401).json({
@@ -53,6 +59,12 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
         message: 'Mật khẩu không chính xác',
       });
       return;
+    }
+
+    if (user.password && !user.password.startsWith('$2a$') && !user.password.startsWith('$2b$')) {
+      user.password = password;
+      user.markModified('password');
+      await user.save();
     }
 
     const userId = String(user._id ?? (user as any).id ?? 'U001');
@@ -63,6 +75,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
       role,
       username: user.username,
       email: user.email,
+      tokenVersion: user.tokenVersion,
     });
 
     res.json({
@@ -88,7 +101,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
 // POST /api/auth/register
 router.post('/register', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, username, email, password, role = 'CUSTOMER', phone } = req.body;
+    const { name, username, email, password, phone } = req.body;
 
     if (!password) {
       res.status(400).json({ success: false, message: 'Mật khẩu là bắt buộc' });
@@ -123,11 +136,12 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
     }
 
     const newUser = new User({
+      _id: `USR_${randomUUID()}`,
       name: name || username || 'Khách hàng FreshLeaf',
       username: username || (email ? email.split('@')[0] : `user_${Date.now()}`),
       email: email ? email.toLowerCase() : undefined,
       password,
-      role: role.toUpperCase(),
+      role: 'CUSTOMER',
       phone: phone || '',
       points: 50,
       loyaltyPoints: 50,
@@ -143,6 +157,7 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
       role: newUser.role,
       username: newUser.username,
       email: newUser.email,
+      tokenVersion: newUser.tokenVersion,
     });
 
     res.status(201).json({
@@ -206,49 +221,10 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response): Promise
       }
     }
 
-    // Return decoded token info if db is busy or user doc not found
-    res.json({
-      success: true,
-      data: {
-        id: req.user.userId,
-        role: req.user.role,
-        username: req.user.username,
-        email: req.user.email,
-      },
-    });
+    res.status(401).json({ success: false, message: 'Tài khoản không còn tồn tại' });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || 'Lỗi xác thực' });
   }
-});
-
-// POST /api/auth/token
-// Session helper for testing roles
-router.post('/token', (req: Request, res: Response): void => {
-  const { role = 'CUSTOMER', userId, username } = req.body;
-  const targetRole = String(role).toUpperCase();
-  const targetUserId = userId || `usr_${targetRole.toLowerCase()}`;
-  const targetUsername = username || `user_${targetRole.toLowerCase()}`;
-
-  const token = generateToken({
-    id: targetUserId,
-    _id: targetUserId,
-    role: targetRole,
-    username: targetUsername,
-    email: `${targetRole.toLowerCase()}@freshleaf.vn`,
-  });
-
-  res.json({
-    success: true,
-    data: {
-      token,
-      user: {
-        id: targetUserId,
-        role: targetRole,
-        username: targetUsername,
-        name: targetRole === 'MANAGER' ? 'Quản lý cửa hàng' : targetRole === 'BARISTA' ? 'Nhân viên pha chế' : targetRole === 'STAFF' ? 'Thu ngân' : 'Khách hàng',
-      },
-    },
-  });
 });
 
 export default router;

@@ -7,6 +7,8 @@ import {
   ClipboardList,
   BarChart3,
   AlertTriangle,
+  Users,
+  BadgePercent,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 
@@ -25,6 +27,8 @@ export const AdminLayout: React.FC = () => {
     },
     { to: '/admin/orders', label: 'Lịch sử đơn hàng', icon: ClipboardList },
     { to: '/admin/reports', label: 'Báo cáo doanh thu', icon: BarChart3 },
+    { to: '/admin/promotions', label: 'Khuyến mãi', icon: BadgePercent },
+    { to: '/admin/users', label: 'Người dùng', icon: Users },
   ];
 
   return (
@@ -33,12 +37,12 @@ export const AdminLayout: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#EAE5D9]">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#2D6A4F] animate-ping" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#6CAE8F]">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#2D6A4F]" />
+            <span className="text-xs font-semibold text-[#5D7067]">
               Cửa hàng FreshLeaf Juice &bull; 268 Nguyễn Trãi, Q.1
             </span>
           </div>
-          <h1 className="font-['Be_Vietnam_Pro'] text-2xl sm:text-3xl font-bold text-[#1B4332] tracking-tight mt-0.5">
+          <h1 className="font-sans text-2xl sm:text-3xl font-bold text-[#1B4332] tracking-tight mt-0.5">
             Quản trị &amp; Vận hành cửa hàng
           </h1>
         </div>
@@ -70,7 +74,7 @@ export const AdminLayout: React.FC = () => {
               key={link.to}
               to={link.to}
               end={link.end}
-              className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
+              className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
                 isActive
                   ? 'border-[#2D6A4F] text-[#1B4332] bg-white rounded-t-lg'
                   : 'border-transparent text-[#5D7067] hover:text-[#1B4332] hover:bg-[#FAF8F2] rounded-t-lg'
